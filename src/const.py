@@ -1,0 +1,3 @@
+N_CLASS = 1
+N_FOLD = 10
+SEED = 42
