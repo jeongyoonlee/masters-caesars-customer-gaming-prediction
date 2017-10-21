@@ -8,7 +8,7 @@ import os
 import pandas as pd
 import time
 
-from const import N_FOLD, SEED
+from const import N_FOLD, SEED, N_JOG
 from evaluate import kappa
 
 from kaggler.data_io import load_data
@@ -58,7 +58,7 @@ def train_predict(train_file, test_file, predict_valid_file, predict_test_file,
                                     subsample_freq=subrow_freq,
                                     colsample_bytree=subcol,
                                     objective='regression',
-                                    n_jobs=8,
+                                    n_jobs=N_JOB,
                                     random_state=SEED)
             clf = clf.fit(X[i_trn], y[i_trn], eval_set=watchlist,
                           eval_metric='l2', early_stopping_rounds=n_stop,
@@ -74,7 +74,7 @@ def train_predict(train_file, test_file, predict_valid_file, predict_test_file,
                                     subsample_freq=subrow_freq,
                                     colsample_bytree=subcol,
                                     objective='regression',
-                                    n_jobs=8,
+                                    n_jobs=N_JOB,
                                     random_state=SEED)
             clf = clf.fit(X[i_trn], y[i_trn], eval_set=watchlist,
                           eval_metric='l2', verbose=10)
@@ -99,7 +99,7 @@ def train_predict(train_file, test_file, predict_valid_file, predict_test_file,
                                 subsample_freq=subrow_freq,
                                 colsample_bytree=subcol,
                                 objective='regression',
-                                n_jobs=8,
+                                n_jobs=N_JOB,
                                 random_state=SEED)
 
         clf = clf.fit(X, y)

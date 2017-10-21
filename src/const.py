@@ -1,3 +1,4 @@
 N_CLASS = 1
 N_FOLD = 5
+N_JOB = 4
 SEED = 42
