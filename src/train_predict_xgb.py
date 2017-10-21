@@ -9,6 +9,8 @@ import pandas as pd
 import time
 
 from const import N_FOLD, SEED, N_JOB
+from evaluate import kappa
+
 from kaggler.data_io import load_data
 
 import xgboost as xgb

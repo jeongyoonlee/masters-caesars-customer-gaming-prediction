@@ -8,7 +8,7 @@ import os
 import pandas as pd
 import time
 
-from const import N_FOLD, SEED, N_JOG
+from const import N_FOLD, SEED, N_JOB
 from evaluate import kappa
 
 from kaggler.data_io import load_data
@@ -61,7 +61,7 @@ def train_predict(train_file, test_file, predict_valid_file, predict_test_file,
                                     n_jobs=N_JOB,
                                     random_state=SEED)
             clf = clf.fit(X[i_trn], y[i_trn], eval_set=watchlist,
-                          eval_metric='l2', early_stopping_rounds=n_stop,
+                          eval_metric='rmse', early_stopping_rounds=n_stop,
                           verbose=10)
             n_best = clf.best_iteration_
             logging.info('best iteration={}'.format(n_best))
@@ -77,7 +77,7 @@ def train_predict(train_file, test_file, predict_valid_file, predict_test_file,
                                     n_jobs=N_JOB,
                                     random_state=SEED)
             clf = clf.fit(X[i_trn], y[i_trn], eval_set=watchlist,
-                          eval_metric='l2', verbose=10)
+                          eval_metric='rmse', verbose=10)
 
         p_val[i_val] = clf.predict(X[i_val])
         logging.info('CV #{}: {:.6f}'.format(i, kappa(y[i_val], p_val[i_val])))
