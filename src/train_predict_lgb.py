@@ -82,7 +82,7 @@ def train_predict(train_file, test_file, predict_valid_file, predict_test_file,
         logging.info('CV #{}: {:.4f}'.format(i, kappa(y[i_val], p_val[i_val])))
 
         if not retrain:
-            p_tst += clf.predict(X_tst) / n_fold
+            p_tst += clf.predict(X_tst) / N_FOLD
 
     logging.info('CV: {:.4f}'.format(kappa(y, p_val)))
     logging.info('Saving validation predictions...')

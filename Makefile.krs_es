@@ -1,0 +1,58 @@
+include Makefile.feature.esb17_rank
+
+N = 100
+BATCH_SIZE = 512
+HIDDEN = 2
+NEURON = 256
+DROPOUT = 0.5
+N_STOP = 10
+ALGO_NAME := krs_es_$(N)_$(HIDDEN)_$(NEURON)_$(DROPOUT)_$(BATCH_SIZE)_$(N_STOP)
+MODEL_NAME := $(ALGO_NAME)_$(FEATURE_NAME)
+
+METRIC_VAL := $(DIR_METRIC)/$(MODEL_NAME).val.txt
+
+PREDICT_VAL := $(DIR_VAL)/$(MODEL_NAME).val.yht
+PREDICT_TST := $(DIR_TST)/$(MODEL_NAME).tst.yht
+
+SUBMISSION_TST := $(DIR_SUB)/$(MODEL_NAME).sub.csv
+SUBMISSION_TST_GZ := $(DIR_SUB)/$(MODEL_NAME).sub.csv.gz
+
+all: validation submission
+validation: $(METRIC_VAL)
+submission: $(SUBMISSION_TST)
+retrain: clean_$(ALGO_NAME) submission
+
+$(PREDICT_TST) $(PREDICT_VAL): $(FEATURE_TRN) $(FEATURE_TST) \
+                                   | $(DIR_VAL) $(DIR_TST)
+	python ./src/train_predict_krs_es.py --train-file $< \
+                              --test-file $(word 2, $^) \
+                              --predict-valid-file $(PREDICT_VAL) \
+                              --predict-test-file $(PREDICT_TST) \
+                              --batch-size $(BATCH_SIZE) \
+                              --n-est $(N) \
+                              --hiddens $(HIDDEN) \
+                              --neurons $(NEURON) \
+                              --dropout $(DROPOUT) \
+                              --early-stopping $(N_STOP)
+
+$(SUBMISSION_TST_GZ): $(SUBMISSION_TST)
+	gzip $<
+
+$(SUBMISSION_TST): $(PREDICT_TST) $(HEADER) $(ID_TST) | $(DIR_TST)
+	paste -d, $(lastword $^) $< > $@.tmp
+	cat $(word 2, $^) $@.tmp > $@
+	rm $@.tmp
+
+$(METRIC_VAL): $(PREDICT_VAL) $(Y_TRN) | $(DIR_METRIC)
+	python ./src/evaluate.py --predict-file $< \
+                             --target-file $(word 2, $^) > $@
+	cat $@
+
+
+clean:: clean_$(ALGO_NAME)
+
+clean_$(ALGO_NAME):
+	-rm $(METRIC_VAL) $(PREDICT_VAL) $(PREDICT_TST) $(SUBMISSION_TST)
+	find . -name '*.pyc' -delete
+
+.DEFAULT_GOAL := all

@@ -1,0 +1,40 @@
+include Makefile
+
+FEATURE_NAME := esb16_rank
+
+BASE_FEATURE := esb16
+
+FEATURE_TRN := $(DIR_FEATURE)/$(FEATURE_NAME).trn.sps
+FEATURE_TST := $(DIR_FEATURE)/$(FEATURE_NAME).tst.sps
+FEATURE_MAP := $(DIR_FEATURE)/$(FEATURE_NAME).fmap
+BASE_FEATURE_MAP := $(DIR_FEATURE)/$(BASE_FEATURE).fmap
+
+BASE_FEATURE_TRN := $(DIR_FEATURE)/$(BASE_FEATURE).trn.csv
+BASE_FEATURE_TST := $(DIR_FEATURE)/$(BASE_FEATURE).tst.csv
+
+FEATURE_TRN_SPS := $(FEATURE_TRN)
+FEATURE_TST_SPS := $(FEATURE_TST)
+
+$(BASE_FEATURE_MAP):
+	make -f Makefile.feature.$(BASE_FEATURE) $@
+
+$(BASE_FEATURE_TST):
+	make -f Makefile.feature.$(BASE_FEATURE) $@
+
+$(BASE_FEATURE_TRN):
+	make -f Makefile.feature.$(BASE_FEATURE) $@
+
+$(FEATURE_MAP): $(BASE_FEATURE_MAP)
+	python src/create_fmap_esb_rank.py --base-feature-map-file $< \
+                                       --feature-map-file $@
+
+$(FEATURE_TRN): $(BASE_FEATURE_TRN)
+	src/add_rank.py --input-file $< --output-file $@
+
+$(FEATURE_TST): $(BASE_FEATURE_TST)
+	src/add_rank.py --input-file $< --output-file $@
+
+clean:: clean_$(FEATURE_NAME)
+
+clean_$(FEATURE_NAME):
+	-rm $(FEATURE_TRN) $(FEATURE_TST) 
