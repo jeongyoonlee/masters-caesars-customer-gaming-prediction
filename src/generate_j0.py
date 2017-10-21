@@ -14,8 +14,8 @@ from kaggler.preprocessing import LabelEncoder
 def generate_feature(train_file, test_file, train_feature_file,
                      test_feature_file, feature_map_file):
     logging.info('loading raw data')
-    trn = pd.read_csv(train_file, index_col='id')
-    tst = pd.read_csv(test_file, index_col='id')
+    trn = pd.read_csv(train_file)
+    tst = pd.read_csv(test_file)
 
     trn['date'] = trn.date.apply(lambda x: pd.to_datetime(x, format='%m%d%Y'))
     tst['date'] = tst.date.apply(lambda x: pd.to_datetime(x, format='%m%d%Y'))

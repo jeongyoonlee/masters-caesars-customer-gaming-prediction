@@ -1,8 +1,8 @@
 include Makefile.feature.j0
 
 N = 10000
-N_LEAF = 200
-LRATE = 0.01
+N_LEAF = 100
+LRATE = 0.05
 N_MIN = 8
 SUBCOL = 0.3
 SUBROW = 0.8
@@ -27,7 +27,7 @@ submission: $(SUBMISSION_TST)
 retrain: clean_$(ALGO_NAME) submission
 
 $(PREDICT_TST) $(PREDICT_VAL): $(FEATURE_TRN) $(FEATURE_TST) \
-                                   | $(DIR_VAL) $(DIR_TST)
+                                   | $(DIR_VAL) $(DIR_TST) $(DIR_LOG)
 	./src/train_predict_lgb.py --train-file $< \
                               --test-file $(word 2, $^) \
                               --predict-valid-file $(PREDICT_VAL) \

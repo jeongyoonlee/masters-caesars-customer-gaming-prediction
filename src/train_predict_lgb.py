@@ -57,12 +57,12 @@ def train_predict(train_file, test_file, predict_valid_file, predict_test_file,
                                     subsample_freq=subrow_freq,
                                     colsample_bytree=subcol,
                                     objective='regression',
-                                    nthread=1,
-                                    seed=SEED)
+                                    n_jobs=8,
+                                    random_state=SEED)
             clf = clf.fit(X[i_trn], y[i_trn], eval_set=watchlist,
                           eval_metric='l2', early_stopping_rounds=n_stop,
                           verbose=10)
-            n_best = clf.best_iteration
+            n_best = clf.best_iteration_
             logging.info('best iteration={}'.format(n_best))
         else:
             clf = lgb.LGBMRegressor(n_estimators=n_best,
@@ -73,8 +73,8 @@ def train_predict(train_file, test_file, predict_valid_file, predict_test_file,
                                     subsample_freq=subrow_freq,
                                     colsample_bytree=subcol,
                                     objective='regression',
-                                    nthread=1,
-                                    seed=SEED)
+                                    n_jobs=8,
+                                    random_state=SEED)
             clf = clf.fit(X[i_trn], y[i_trn], eval_set=watchlist,
                           eval_metric='l2', verbose=10)
 
@@ -98,8 +98,8 @@ def train_predict(train_file, test_file, predict_valid_file, predict_test_file,
                                 subsample_freq=subrow_freq,
                                 colsample_bytree=subcol,
                                 objective='regression',
-                                nthread=1,
-                                seed=SEED)
+                                n_jobs=8,
+                                random_state=SEED)
 
         clf = clf.fit(X, y)
         p_tst = clf.predict(X_tst)
