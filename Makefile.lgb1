@@ -2,7 +2,7 @@ include Makefile.feature.j0
 
 N = 10000
 N_LEAF = 100
-LRATE = 0.05
+LRATE = 0.1
 N_MIN = 8
 SUBCOL = 0.3
 SUBROW = 0.8

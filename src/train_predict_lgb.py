@@ -1,13 +1,9 @@
 #!/usr/bin/env python
 
-from __future__ import division
 from sklearn.model_selection import KFold
-
 import argparse
-import ctypes
 import logging
 import numpy as np
-import operator
 import os
 import pandas as pd
 import time
@@ -16,7 +12,6 @@ from const import N_FOLD, SEED
 from evaluate import kappa
 
 from kaggler.data_io import load_data
-from kaggler.metrics import rmse
 
 import lightgbm as lgb
 
@@ -31,8 +26,14 @@ def train_predict(train_file, test_file, predict_valid_file, predict_test_file,
         log_file = '{}.log'.format(model_name)
 
     logging.basicConfig(format='%(asctime)s   %(levelname)s   %(message)s',
-                        level=logging.DEBUG,
-                        filename=log_file)
+                        level=logging.DEBUG, filename=log_file,
+                        datefmt='%Y-%m-%d %H:%M:%S')
+
+    logging.info('{}'.format(model_name))
+    logging.info(('n_est={}, n_leaf={}, lrate={}, '
+                  'n_min={}, subcol={}, subrow={},'
+                  'subrow_freq={}, n_stop={}').format(n_est, n_leaf, lrate, n_min,
+                                                      subcol, subrow, subrow_freq, n_stop))
 
     logging.info('Loading training and test data...')
     X, y = load_data(train_file)
@@ -79,12 +80,12 @@ def train_predict(train_file, test_file, predict_valid_file, predict_test_file,
                           eval_metric='l2', verbose=10)
 
         p_val[i_val] = clf.predict(X[i_val])
-        logging.info('CV #{}: {:.4f}'.format(i, kappa(y[i_val], p_val[i_val])))
+        logging.info('CV #{}: {:.6f}'.format(i, kappa(y[i_val], p_val[i_val])))
 
         if not retrain:
             p_tst += clf.predict(X_tst) / N_FOLD
 
-    logging.info('CV: {:.4f}'.format(kappa(y, p_val)))
+    logging.info('CV: {:.6f}'.format(kappa(y, p_val)))
     logging.info('Saving validation predictions...')
     np.savetxt(predict_valid_file, p_val, fmt='%.6f', delimiter=',')
 
