@@ -83,7 +83,7 @@ def train_predict(train_file, test_file, feature_map_file, predict_valid_file,
             df.to_csv(feature_importance_file, index=True)
             logging.info('feature importance is saved in {}'.format(feature_importance_file))
         else:
-            clf = xgb.train(params, xgtrn, n_best, watchlist, fairobj, eval_mae)
+            clf = xgb.train(params, xgtrn, n_best, watchlist)
 
         p_val[i_val] = clf.predict(xgval, ntree_limit=n_best)
         logging.info('CV #{}: {:.6f}'.format(i, kappa(y[i_val], p_val[i_val])))
@@ -99,7 +99,7 @@ def train_predict(train_file, test_file, feature_map_file, predict_valid_file,
         logging.info('Retraining with 100% training data')
         xgtrn = xgb.DMatrix(X, label=y)
         watchlist = [(xgtrn, 'train')]
-        clf = xgb.train(params, xgtrn, n_best, watchlist, fairobj, eval_mae)
+        clf = xgb.train(params, xgtrn, n_best, watchlist)
         p_tst = clf.predict(xgtst, ntree_limit=n_best)
 
     logging.info('Saving test predictions...')
