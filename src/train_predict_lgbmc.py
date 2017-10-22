@@ -76,7 +76,7 @@ def train_predict(train_file, test_file, predict_valid_file, predict_test_file,
                             valid_sets=lgb_val,
                             categorical_feature=cat_cols)
 
-            n_best = clf.best_iteration_
+            n_best = clf.best_iteration
             logging.info('best iteration={}'.format(n_best))
         else:
             clf = lgb.train(params,
@@ -85,7 +85,7 @@ def train_predict(train_file, test_file, predict_valid_file, predict_test_file,
                             valid_sets=lgb_val,
                             categorical_feature=cat_cols)
 
-        p_val[i_val] = np.argmax(clf.predict(lgb_val), axis=1)
+        p_val[i_val] = np.argmax(clf.predict(X[i_val]), axis=1)
         logging.info('CV #{}: {:.6f}'.format(i, kappa(y[i_val], p_val[i_val])))
 
         P_tst += clf.predict(X_tst) / N_FOLD
