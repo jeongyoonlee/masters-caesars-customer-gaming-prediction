@@ -1,0 +1,31 @@
+#--------------------------------------------------------------------------
+# n2: one-hot-encoded feature for NN
+#--------------------------------------------------------------------------
+include Makefile
+
+N := 100
+N_STOP := 10
+BATCH := 1024
+
+FEATURE_NAME := n2
+
+BASE_FEATURE_NAME := n1
+BASE_FEATURE_TRN := $(DIR_FEATURE)/$(BASE_FEATURE_NAME).trn.h5
+BASE_FEATURE_TST := $(DIR_FEATURE)/$(BASE_FEATURE_NAME).tst.h5
+
+FEATURE_TRN := $(DIR_FEATURE)/$(FEATURE_NAME).trn.h5
+FEATURE_TST := $(DIR_FEATURE)/$(FEATURE_NAME).tst.h5
+FEATURE_MAP := $(DIR_FEATURE)/$(FEATURE_NAME).fmap
+
+$(BASE_FEATURE_TRN) $(BASE_FEATURE_TST):
+	make -f Makefile.feature.$(BASE_FEATURE_NAME) $(BASE_FEATURE_TRN)
+
+$(FEATURE_TRN) $(FEATURE_TST) $(FEATURE_MAP): $(BASE_FEATURE_TRN) $(BASE_FEATURE_TST) | $(DIR_FEATURE)
+	python ./src/generate_$(FEATURE_NAME).py --base-train-feature-file $< \
+                                             --base-test-feature-file $(lastword $^) \
+                                             --train-feature-file $(FEATURE_TRN) \
+                                             --test-feature-file $(FEATURE_TST) \
+                                             --feature-map-file $(FEATURE_MAP) \
+											 --n-est $(N) \
+											 --n-stop $(N_STOP) \
+											 --batch-size $(BATCH)

@@ -1,15 +1,15 @@
 #!/usr/bin/env python
+from scipy import sparse
+from sklearn.preprocessing import MinMaxScaler
 import argparse
 import logging
 import numpy as np
 import os
 import pandas as pd
 import time
-from itertools import combinations
 
 from kaggler.data_io import load_data, save_data
-from kaggler.preprocessing import LabelEncoder
-from sklearn.preprocessing import MinMaxScaler
+from kaggler.preprocessing import OneHotEncoder
 
 
 def generate_feature(train_file, test_file, train_feature_file,
@@ -34,66 +34,42 @@ def generate_feature(train_file, test_file, train_feature_file,
     n_trn = trn.shape[0]
 
     logging.info('splitting customer ids into first 8 digits')
-    trn['cid_8'] = trn.customer_id // 10000
-    tst['cid_8'] = tst.customer_id // 10000
+    trn.customer_id = trn.customer_id // 1e7
+    tst.customer_id = tst.customer_id // 1e7
 
     logging.info('drop unused columns')
-    trn.drop(['target', 'date', 'f_19', 'customer_id'], axis=1, inplace=True)
-    tst.drop(['id', 'date', 'f_19', 'customer_id'], axis=1, inplace=True)
+    trn.drop(['target', 'date', 'f_19'], axis=1, inplace=True)
+    tst.drop(['id', 'date', 'f_19'], axis=1, inplace=True)
 
-    cat_cols = ['cid_8'] + [x for x in trn.columns if trn[x].dtype == np.object]
+    cat_cols = ['customer_id'] + [x for x in trn.columns if trn[x].dtype == np.object]
     float_cols = [x for x in trn.columns if trn[x].dtype == np.float64]
-    int_cols = [x for x in trn.columns if (trn[x].dtype == np.int64) & (x != 'cid_8')]
+    int_cols = [x for x in trn.columns if (trn[x].dtype == np.int64) & (x != 'customer_id')]
 
     logging.info('categorical: {}, float: {}, int: {}'.format(len(cat_cols),
                                                               len(float_cols),
                                                               len(int_cols)))
 
     logging.info('label encoding categorical variables')
-    lbe = LabelEncoder(min_obs=10)
-    trn.ix[:, cat_cols] = lbe.fit_transform(trn[cat_cols].values)
-    tst.ix[:, cat_cols] = lbe.transform(tst[cat_cols].values)
+    ohe = OneHotEncoder(min_obs=100)
+    df = pd.concat([trn, tst], axis=0)
+    X_cat = ohe.fit_transform(df[int_cols + cat_cols].values)
 
     logging.info('min-max scaling float columns')
     scaler = MinMaxScaler()
-    trn.ix[:, float_cols] = scaler.fit_transform(trn[float_cols].values)
-    tst.ix[:, float_cols] = scaler.transform(tst[float_cols].values)
+    X_num = scaler.fit_transform(df[float_cols].values)
 
-    logging.info('adding interactions')
-    trn['f_5+f_21'] = trn.f_5 + trn.f_21
-    tst['f_5+f_21'] = tst.f_5 + tst.f_21
-    float_cols.append('f_5+f_21')
-
-    interaction_cols = ['f_13', 'f_21', 'f_15', 'f_26']
-    for col1, col2 in combinations(interaction_cols, 2):
-        logging.info('adding interactions between {} and {}'.format(col1, col2))
-        trn['{}+{}'.format(col1, col2)] = trn[col1] + trn[col2]
-        tst['{}+{}'.format(col1, col2)] = tst[col1] + tst[col2]
-
-        trn['{}-{}'.format(col1, col2)] = trn[col1] - trn[col2]
-        tst['{}-{}'.format(col1, col2)] = tst[col1] - tst[col2]
-
-        trn['{}x{}'.format(col1, col2)] = trn[col1].apply(np.log1p) + trn[col2].apply(np.log1p)
-        tst['{}x{}'.format(col1, col2)] = tst[col1].apply(np.log1p) + tst[col2].apply(np.log1p)
-
-        trn['{}/{}'.format(col1, col2)] = trn[col1].apply(np.log1p) - trn[col2].apply(np.log1p)
-        tst['{}/{}'.format(col1, col2)] = tst[col1].apply(np.log1p) - tst[col2].apply(np.log1p)
-
-        float_cols += ['{}+{}'.format(col1, col2),
-                       '{}-{}'.format(col1, col2),
-                       '{}x{}'.format(col1, col2),
-                       '{}/{}'.format(col1, col2)]
+    X = sparse.hstack((X_num, X_cat)).tocsr()
 
     with open(feature_map_file, 'w') as f:
-        for i, col in enumerate(trn.columns):
-            if col in cat_cols + int_cols:
-                f.write('{}\t{}\tint\n'.format(i, col))
-            else:
+        for i, col in enumerate(range(X.shape[1])):
+            if i < X_num.shape[1]:
                 f.write('{}\t{}\tq\n'.format(i, col))
+            else:
+                f.write('{}\t{}\ti\n'.format(i, col))
 
     logging.info('saving features')
-    save_data(trn.values.astype(float), y, train_feature_file)
-    save_data(tst.values.astype(float), None, test_feature_file)
+    save_data(X[:n_trn], y, train_feature_file)
+    save_data(X[n_trn:], None, test_feature_file)
 
 
 if __name__ == '__main__':
