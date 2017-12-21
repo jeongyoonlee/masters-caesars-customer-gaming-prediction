@@ -17,9 +17,11 @@ def generate_feature(train_file, test_file, train_feature_file,
     trn = pd.read_csv(train_file)
     tst = pd.read_csv(test_file)
 
+    logging.info('converting the date column into datetime')
     trn['date'] = trn.date.apply(lambda x: pd.to_datetime(x, format='%m%d%Y'))
     tst['date'] = tst.date.apply(lambda x: pd.to_datetime(x, format='%m%d%Y'))
 
+    logging.info('add year and month features')
     trn['year_2017'] = trn.date.dt.year - 2016
     tst['year_2017'] = tst.date.dt.year - 2016
 
@@ -30,6 +32,7 @@ def generate_feature(train_file, test_file, train_feature_file,
 
     n_trn = trn.shape[0]
 
+    logging.info('drop unused columns')
     trn.drop(['target', 'date', 'f_19'], axis=1, inplace=True)
     tst.drop(['id', 'date', 'f_19'], axis=1, inplace=True)
 
@@ -41,7 +44,7 @@ def generate_feature(train_file, test_file, train_feature_file,
 
     cat_cols = ['customer_id', 'cid_8', 'cid_4'] + [x for x in trn.columns if trn[x].dtype == np.object]
     float_cols = [x for x in trn.columns if trn[x].dtype == np.float64]
-    int_cols = [x for x in trn.columns if trn[x].dtype == np.int64]
+    int_cols = [x for x in trn.columns if (trn[x].dtype == np.int64) & (x not in ['cid_4', 'cid_8', 'customer_id'])]
 
     logging.info('categorical: {}, float: {}, int: {}'.format(len(cat_cols),
                                                               len(float_cols),
@@ -60,6 +63,7 @@ def generate_feature(train_file, test_file, train_feature_file,
     logging.info('adding interactions')
     interaction_cols = ['f_13', 'f_21', 'f_15', 'f_26']
     for col1, col2 in combinations(interaction_cols):
+        logging.info('adding interactions between {} and {}'.format(col1, col2))
         trn['{}+{}'.format(col1, col2)] = trn[col1] + trn[col2]
         tst['{}+{}'.format(col1, col2)] = tst[col1] + tst[col2]
 

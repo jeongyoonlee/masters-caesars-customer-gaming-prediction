@@ -5,3 +5,4 @@ input/
 build/
 data/
 .kaggle-cli/
+__pycache__/

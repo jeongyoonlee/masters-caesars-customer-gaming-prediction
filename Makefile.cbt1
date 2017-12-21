@@ -37,8 +37,10 @@ $(PREDICT_TST) $(PREDICT_VAL): $(FEATURE_TRN) $(FEATURE_TST) $(FEATURE_MAP) \
 $(SUBMISSION_TST_GZ): $(SUBMISSION_TST)
 	gzip $<
 
-$(SUBMISSION_TST): $(PREDICT_TST) $(SAMPLE_SUBMISSION) | $(DIR_SUB)
-	python src/write_submission.py --predict-file $< \
+$(SUBMISSION_TST): $(PREDICT_VAL) $(PREDICT_TST) $(Y_TRN) $(SAMPLE_SUBMISSION) | $(DIR_SUB)
+	python src/write_submission.py --predict-valid-file $< \
+								   --predict-test-file $(word $^, 2) \
+								   --target-file $(word $^, 3) \
 								   --sample-file $(lastword $^) \
 								   --submission-file $@
 
