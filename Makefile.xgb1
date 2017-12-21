@@ -1,4 +1,4 @@
-include Makefile.feature.j0
+include Makefile.feature.j1
 
 N = 10000
 DEPTH = 7

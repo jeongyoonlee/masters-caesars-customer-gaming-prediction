@@ -18,9 +18,16 @@ import lightgbm as lgb
 
 def train_predict(train_file, test_file, predict_valid_file, predict_test_file,
                   n_est=100, n_leaf=200, lrate=.1, n_min=8, subcol=.3, subrow=.8,
-                  subrow_freq=100, n_stop=100, retrain=True):
+                  subrow_freq=100, n_stop=100, retrain=True, log_file=None):
 
     model_name = os.path.splitext(os.path.splitext(os.path.basename(predict_test_file))[0])[0]
+
+    if log_file is None:
+        log_file = '{}.log'.format(model_name)
+
+    logging.basicConfig(format='%(asctime)s   %(levelname)s   %(message)s',
+                        level=logging.DEBUG, filename=log_file,
+                        datefmt='%Y-%m-%d %H:%M:%S')
 
     logging.info('{}'.format(model_name))
     logging.info(('n_est={}, n_leaf={}, lrate={}, '
@@ -124,10 +131,6 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    logging.basicConfig(format='%(asctime)s   %(levelname)s   %(message)s',
-                        level=logging.DEBUG, filename=args.log_file,
-                        datefmt='%Y-%m-%d %H:%M:%S')
-
     start = time.time()
     train_predict(train_file=args.train_file,
                   test_file=args.test_file,
@@ -141,6 +144,7 @@ if __name__ == '__main__':
                   subrow=args.subrow,
                   subrow_freq=args.subrow_freq,
                   n_stop=args.n_stop,
-                  retrain=args.retrain)
+                  retrain=args.retrain,
+                  log_file=args.log_file)
     logging.info('finished ({:.2f} min elasped)'.format((time.time() - start) /
                                                         60))

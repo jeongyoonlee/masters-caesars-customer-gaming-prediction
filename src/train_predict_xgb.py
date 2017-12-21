@@ -19,16 +19,9 @@ import xgboost as xgb
 def train_predict(train_file, test_file, feature_map_file, predict_valid_file,
                   predict_test_file, feature_importance_file, n_est=100,
                   depth=4, lrate=.1, subcol=.5, subrow=.5, sublev=1, weight=1,
-                  n_stop=100, retrain=True, log_file=None):
+                  n_stop=100, retrain=True):
 
     model_name = os.path.splitext(os.path.splitext(os.path.basename(predict_test_file))[0])[0]
-
-    if log_file is None:
-        log_file = '{}.log'.format(model_name)
-
-    logging.basicConfig(format='%(asctime)s   %(levelname)s   %(message)s',
-                        level=logging.DEBUG, filename=log_file,
-                        datefmt='%Y-%m-%d %H:%M:%S')
 
     logging.info(('n_est={}, depth={}, lrate={}, '
                   'subcol={}, subrow={}, sublev={},'
@@ -131,6 +124,10 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    logging.basicConfig(format='%(asctime)s   %(levelname)s   %(message)s',
+                        level=logging.DEBUG, filename=args.log_file,
+                        datefmt='%Y-%m-%d %H:%M:%S')
+
     start = time.time()
     train_predict(train_file=args.train_file,
                   test_file=args.test_file,
@@ -146,7 +143,6 @@ if __name__ == '__main__':
                   sublev=args.sublev,
                   weight=args.weight,
                   n_stop=args.n_stop,
-                  retrain=args.retrain,
-                  log_file=args.log_file)
+                  retrain=args.retrain)
     logging.info('finished ({:.2f} min elasped)'.format((time.time() - start) /
                                                         60))

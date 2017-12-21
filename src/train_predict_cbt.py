@@ -18,16 +18,9 @@ import catboost as cbt
 
 def train_predict(train_file, test_file, feature_map_file, predict_valid_file,
                   predict_test_file, n_est=100,
-                  depth=4, lrate=.1, l2_leaf_reg=1, log_file=None):
+                  depth=4, lrate=.1, l2_leaf_reg=1):
 
     model_name = os.path.splitext(os.path.splitext(os.path.basename(predict_test_file))[0])[0]
-
-    if log_file is None:
-        log_file = '{}.log'.format(model_name)
-
-    logging.basicConfig(format='%(asctime)s   %(levelname)s   %(message)s',
-                        level=logging.DEBUG, filename=log_file,
-                        datefmt='%Y-%m-%d %H:%M:%S')
 
     logging.info(('n_est={}, depth={}, lrate={}, '
                   'l2_leaf_reg={}').format(n_est, depth, lrate, l2_leaf_reg))
@@ -113,6 +106,10 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    logging.basicConfig(format='%(asctime)s   %(levelname)s   %(message)s',
+                        level=logging.DEBUG, filename=args.log_file,
+                        datefmt='%Y-%m-%d %H:%M:%S')
+
     start = time.time()
     train_predict(train_file=args.train_file,
                   test_file=args.test_file,
@@ -122,7 +119,6 @@ if __name__ == '__main__':
                   n_est=args.n_est,
                   depth=args.depth,
                   lrate=args.lrate,
-                  l2_leaf_reg=args.l2_leaf_reg,
-                  log_file=args.log_file)
+                  l2_leaf_reg=args.l2_leaf_reg)
     logging.info('finished ({:.2f} min elasped)'.format((time.time() - start) /
                                                         60))
