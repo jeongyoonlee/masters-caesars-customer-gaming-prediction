@@ -93,8 +93,13 @@ def generate_feature(train_file, test_file, train_feature_file,
             f.write('{}\t{}\tq\n'.format(i, col))
 
     logging.info('saving features')
-    save_data(encoder.predict(X[:n_trn]), y, train_feature_file)
-    save_data(encoder.predict(X[n_trn:]), None, test_feature_file)
+    P = encoder.predict_generator(generator(X[:n_trn], None, batch_size),
+                                  steps=int(np.ceil(n_trn / batch_size)))
+    save_data(sparse.csr_matrix(P), y, train_feature_file)
+
+    P = encoder.predict_generator(generator(X[n_trn:], None, batch_size),
+                                  steps=int(np.ceil((X.shape[0] - n_trn) / batch_size)))
+    save_data(sparse.csr_matrix(P), None, test_feature_file)
 
 
 if __name__ == '__main__':
