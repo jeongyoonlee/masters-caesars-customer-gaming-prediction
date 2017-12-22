@@ -1,12 +1,12 @@
-include Makefile.feature.n2
+include Makefile.feature.n3
 
 N = 10000
 N_LEAF = 100
-LRATE = 0.1
+LRATE = 0.3
 N_MIN = 8
 SUBCOL = 0.3
 SUBROW = 0.8
-SUBROW_FREQ = 100
+SUBROW_FREQ = 10
 N_STOP = 100
 ALGO_NAME := lgb1
 MODEL_NAME := $(ALGO_NAME)_$(FEATURE_NAME)

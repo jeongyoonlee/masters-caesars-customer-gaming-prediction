@@ -32,6 +32,18 @@ def train_predict(train_file, test_file, predict_valid_file, predict_test_file,
     X, y = load_data(train_file)
     X_tst, _ = load_data(test_file)
 
+    params = {'boosting_type': 'gbdt',
+              'objective': 'regression',
+              'num_leaves': n_leaf,
+              'learning_rate': lrate,
+              'feature_fraction': subcol,
+              'bagging_fraction': subrow,
+              'bagging_freq': subrow_freq,
+              'min_data_in_leaf': n_min,
+              'metric': 'rmse',
+              'verbose': 0,
+              'num_threads': N_JOB}
+
     logging.info('Loading CV Ids')
     cv = KFold(n_splits=N_FOLD, shuffle=True, random_state=SEED)
 
@@ -39,38 +51,26 @@ def train_predict(train_file, test_file, predict_valid_file, predict_test_file,
     p_tst = np.zeros(X_tst.shape[0])
     for i, (i_trn, i_val) in enumerate(cv.split(y), 1):
         logging.info('Training model #{}'.format(i))
-        watchlist = [(X[i_val], y[i_val])]
+        lgb_trn = lgb.Dataset(X[i_trn], y[i_trn])
+        lgb_val = lgb.Dataset(X[i_val], y[i_val])
 
         if i == 1:
             logging.info('Training with early stopping')
-            clf = lgb.LGBMRegressor(n_estimators=n_est,
-                                    num_leaves=n_leaf,
-                                    learning_rate=lrate,
-                                    min_child_samples=n_min,
-                                    subsample=subrow,
-                                    subsample_freq=subrow_freq,
-                                    colsample_bytree=subcol,
-                                    objective='regression',
-                                    n_jobs=N_JOB,
-                                    random_state=SEED)
-            clf = clf.fit(X[i_trn], y[i_trn], eval_set=watchlist,
-                          eval_metric='rmse', early_stopping_rounds=n_stop,
-                          verbose=10)
-            n_best = clf.best_iteration_
+            clf = lgb.train(params,
+                            lgb_trn,
+                            num_boost_round=n_est,
+                            early_stopping_rounds=n_stop,
+                            valid_sets=lgb_val,
+                            verbose_eval=100)
+
+            n_best = clf.best_iteration
             logging.info('best iteration={}'.format(n_best))
         else:
-            clf = lgb.LGBMRegressor(n_estimators=n_best,
-                                    num_leaves=n_leaf,
-                                    learning_rate=lrate,
-                                    min_child_samples=n_min,
-                                    subsample=subrow,
-                                    subsample_freq=subrow_freq,
-                                    colsample_bytree=subcol,
-                                    objective='regression',
-                                    n_jobs=N_JOB,
-                                    random_state=SEED)
-            clf = clf.fit(X[i_trn], y[i_trn], eval_set=watchlist,
-                          eval_metric='rmse', verbose=10)
+            clf = lgb.train(params,
+                            lgb_trn,
+                            num_boost_round=n_best,
+                            valid_sets=lgb_val,
+                            verbose_eval=100)
 
         p_val[i_val] = clf.predict(X[i_val])
         logging.info('CV #{}: {:.6f}'.format(i, kappa(y[i_val], p_val[i_val])))
@@ -84,18 +84,12 @@ def train_predict(train_file, test_file, predict_valid_file, predict_test_file,
 
     if retrain:
         logging.info('Retraining with 100% training data')
-        clf = lgb.LGBMRegressor(n_estimators=n_best,
-                                num_leaves=n_leaf,
-                                learning_rate=lrate,
-                                min_child_samples=n_min,
-                                subsample=subrow,
-                                subsample_freq=subrow_freq,
-                                colsample_bytree=subcol,
-                                objective='regression',
-                                n_jobs=N_JOB,
-                                random_state=SEED)
+        lgb_trn = lgb.Dataset(X, y)
+        clf = lgb.train(params,
+                        lgb_trn,
+                        num_boost_round=n_best,
+                        verbose_eval=100)
 
-        clf = clf.fit(X, y)
         p_tst = clf.predict(X_tst)
 
     logging.info('Saving test predictions...')
