@@ -1,30 +1,17 @@
 #--------------------------------------------------------------------------
-# j2: j1 + n3
+# j2: j1 + original customer_id
 #--------------------------------------------------------------------------
 include Makefile
 
 FEATURE_NAME := j2
 
-BASE_FEATURE1 := j1
-BASE_FEATURE2 := n3
-
-BASE_FEATURE_TRNS := $(DIR_FEATURE)/$(BASE_FEATURE1).trn.h5 \
-					 $(DIR_FEATURE)/$(BASE_FEATURE2).trn.h5
-
-BASE_FEATURE_TSTS := $(DIR_FEATURE)/$(BASE_FEATURE1).tst.h5 \
-					 $(DIR_FEATURE)/$(BASE_FEATURE2).tst.h5
-
-BASE_FEATURE_MAPS := $(DIR_FEATURE)/$(BASE_FEATURE1).map \
-					 $(DIR_FEATURE)/$(BASE_FEATURE2).map
-
 FEATURE_TRN := $(DIR_FEATURE)/$(FEATURE_NAME).trn.h5
 FEATURE_TST := $(DIR_FEATURE)/$(FEATURE_NAME).tst.h5
 FEATURE_MAP := $(DIR_FEATURE)/$(FEATURE_NAME).fmap
 
-$(FEATURE_TRN): $(BASE_FEATURE_TRNS) 
-	python ./src/combine_features.py --base-features $^ --feature-file $@
-$(FEATURE_TST): $(BASE_FEATURE_TSTS)
-	python ./src/combine_features.py --base-features $^ --feature-file $@
-$(FEATURE_MAP): $(BASE_FEATURE_MAPS)
-	python ./src/combine_feature_maps.py --base-feature-maps $^ \
-                                         --feature-map-file $@
+#$(FEATURE_TRN) $(FEATURE_TST) $(FEATURE_MAP): $(DATA_TRN) $(DATA_TST) | $(DIR_FEATURE)
+#	python ./src/generate_$(FEATURE_NAME).py --train-file $< \
+                                             --test-file $(lastword $^) \
+                                             --train-feature-file $(FEATURE_TRN) \
+                                             --test-feature-file $(FEATURE_TST) \
+                                             --feature-map-file $(FEATURE_MAP)
