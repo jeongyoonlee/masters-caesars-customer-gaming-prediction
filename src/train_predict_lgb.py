@@ -16,6 +16,9 @@ from kaggler.data_io import load_data
 import lightgbm as lgb
 
 
+np.random.seed(SEED)
+
+
 def train_predict(train_file, test_file, predict_valid_file, predict_test_file,
                   n_est=100, n_leaf=200, lrate=.1, n_min=8, subcol=.3, subrow=.8,
                   subrow_freq=100, n_stop=100, retrain=True):
@@ -40,6 +43,9 @@ def train_predict(train_file, test_file, predict_valid_file, predict_test_file,
               'bagging_fraction': subrow,
               'bagging_freq': subrow_freq,
               'min_data_in_leaf': n_min,
+              'feature_franction_seed': SEED,
+              'bagging_seed': SEED,
+              'data_random_seed': SEED,
               'metric': 'rmse',
               'verbose': 0,
               'num_threads': N_JOB}
