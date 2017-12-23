@@ -21,10 +21,10 @@ FEATURE_TRN := $(DIR_FEATURE)/$(FEATURE_NAME).trn.h5
 FEATURE_TST := $(DIR_FEATURE)/$(FEATURE_NAME).tst.h5
 FEATURE_MAP := $(DIR_FEATURE)/$(FEATURE_NAME).fmap
 
-$(FEATURE_TRN): $(BASE_FEATURE_TRNS) 
-	python ./src/combine_features.py --base-features $^ --feature-file $@
-$(FEATURE_TST): $(BASE_FEATURE_TSTS)
-	python ./src/combine_features.py --base-features $^ --feature-file $@
-$(FEATURE_MAP): $(BASE_FEATURE_MAPS)
-	python ./src/combine_feature_maps.py --base-feature-maps $^ \
-                                         --feature-map-file $@
+$(FEATURE_TRN) $(FEATURE_TST) $(FEATURE_MAP): $(BASE_FEATURE_TRNS) $(BASE_FEATURE_TSTS) $(BASE_FEATURE_MAPS)
+	python ./src/combine_features.py --base-train-features $(BASE_FEATURE_TRNS)\
+									 --base-test-features $(BASE_FEATURE_TSTS) \
+									 --base-feature-maps $(BASE_FEATURE_MAPS) \
+									 --train-feature-file $(FEATURE_TRN) \
+									 --test-feature-file $(FEATURE_TST) \
+									 --feature-map-file $(FEATURE_MAP)
