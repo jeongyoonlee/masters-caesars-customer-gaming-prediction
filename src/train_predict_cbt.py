@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from sklearn.model_selection import KFold
+from scipy import sparse
 import argparse
 import logging
 import numpy as np
@@ -32,6 +33,10 @@ def train_predict(train_file, test_file, feature_map_file, predict_valid_file,
     X, y = load_data(train_file)
     X_tst, _ = load_data(test_file)
 
+    if sparse.issparse(X):
+        X = X.todense()
+        X_tst = X_tst.todense()
+
     features = pd.read_csv(feature_map_file, sep='\t', header=None,
                            names=['idx', 'name', 'type'])
     cat_cols = features.idx[features.type != 'q'].tolist()
@@ -55,10 +60,16 @@ def train_predict(train_file, test_file, feature_map_file, predict_valid_file,
                                          random_seed=SEED,
                                          thread_count=N_JOB)
 
-            clf = clf.fit(X[i_trn], y[i_trn],
-                          eval_set=[X[i_val], y[i_val]],
-                          use_best_model=True,
-                          cat_features=cat_cols)
+            if len(cat_cols) > 0:
+                clf = clf.fit(X[i_trn], y[i_trn],
+                              eval_set=[X[i_val], y[i_val]],
+                              use_best_model=True,
+                              cat_features=cat_cols)
+            else:
+                clf = clf.fit(X[i_trn], y[i_trn],
+                              eval_set=[X[i_val], y[i_val]],
+                              use_best_model=True)
+
             n_best = clf.tree_count_
             logging.info('best iteration={}'.format(n_best))
         else:
@@ -70,10 +81,15 @@ def train_predict(train_file, test_file, feature_map_file, predict_valid_file,
                                          random_seed=SEED,
                                          thread_count=N_JOB)
 
-            clf = clf.fit(X[i_trn], y[i_trn],
-                          eval_set=(X[i_val], y[i_val]),
-                          use_best_model=False,
-                          cat_features=cat_cols)
+            if len(cat_cols) > 0:
+                clf = clf.fit(X[i_trn], y[i_trn],
+                              eval_set=(X[i_val], y[i_val]),
+                              use_best_model=False,
+                              cat_features=cat_cols)
+            else:
+                clf = clf.fit(X[i_trn], y[i_trn],
+                              eval_set=(X[i_val], y[i_val]),
+                              use_best_model=False)
 
         p_val[i_val] = clf.predict(X[i_val])
         logging.info('CV #{}: {:.6f}'.format(i, kappa(y[i_val], p_val[i_val])))

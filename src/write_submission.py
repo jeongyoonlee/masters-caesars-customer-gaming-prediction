@@ -79,6 +79,7 @@ if __name__ == '__main__':
     p = np.loadtxt(args.predict_valid_file)
     y = np.loadtxt(args.target_file)
     cutoffs = get_cutoffs(p, y)
+    np.savetxt(args.submission_file + '.cutoff', np.array(cutoffs))
 
     logging.info('writing a submission file by applying the cutoffs to test predictions')
     p_tst = np.loadtxt(args.predict_test_file)
