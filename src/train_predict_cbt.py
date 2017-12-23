@@ -11,7 +11,7 @@ import time
 from const import N_FOLD, SEED, N_JOB
 
 from kaggler.data_io import load_data
-from kaggler.metrics import gini
+from evaluate import kappa
 
 import catboost as cbt
 
@@ -76,11 +76,11 @@ def train_predict(train_file, test_file, feature_map_file, predict_valid_file,
                           cat_features=cat_cols)
 
         p_val[i_val] = clf.predict(X[i_val])
-        logging.info('CV #{}: {:.6f}'.format(i, gini(y[i_val], p_val[i_val])))
+        logging.info('CV #{}: {:.6f}'.format(i, kappa(y[i_val], p_val[i_val])))
 
         p_tst += clf.predict(X_tst) / N_FOLD
 
-    logging.info('CV: {:.6f}'.format(gini(y, p_val)))
+    logging.info('CV: {:.6f}'.format(kappa(y, p_val)))
     logging.info('Saving validation predictions...')
     np.savetxt(predict_valid_file, p_val, fmt='%.6f', delimiter=',')
 
