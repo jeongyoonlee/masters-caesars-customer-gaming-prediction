@@ -2,6 +2,7 @@ from scipy import sparse
 import argparse
 import logging
 import numpy as np
+import pandas as pd
 import time
 
 from kaggler.data_io import load_data, save_data
