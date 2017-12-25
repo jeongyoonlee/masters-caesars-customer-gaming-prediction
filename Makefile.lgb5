@@ -1,0 +1,95 @@
+include Makefile.feature.h1
+
+N = 10000
+N_LEAF = 200
+LRATE = 0.2
+N_MIN = 8
+SUBCOL = 0.5
+SUBROW = 0.8
+SUBROW_FREQ = 100
+N_STOP = 100
+ALGO_NAME := lgb_$(N)_$(N_LEAF)_$(LRATE)_$(N_MIN)_$(SUBCOL)_$(SUBROW)_$(SUBROW_FREQ)_$(N_STOP)
+MODEL_NAME := $(ALGO_NAME)_$(FEATURE_NAME)
+
+PREDICT_VAL := $(DIR_VAL)/$(MODEL_NAME).val.yht
+PREDICT_TST := $(DIR_TST)/$(MODEL_NAME).tst.yht
+METRIC_VAL := $(DIR_METRIC)/$(MODEL_NAME).val.txt
+
+SUBMISSION_TST := $(DIR_SUB)/$(MODEL_NAME).sub.csv
+SUBMISSION_TST_GZ := $(DIR_SUB)/$(MODEL_NAME).sub.csv.gz
+
+all: validation submission
+validation: $(METRIC_VAL)
+qwk: $(METRIC_VAL).qwk
+submission: $(SUBMISSION_TST)
+sub_gzip: $(SUBMISSION_TST_GZ)
+sub4: $(SUBMISSION_TST).4
+
+retrain: clean_$(ALGO_NAME) submission
+
+$(PREDICT_VAL) $(PREDICT_TST): $(FEATURE_TRN) $(FEATURE_TST) $(CV_ID) \
+                                   | $(DIR_VAL) $(DIR_TST)
+	python ./src/train_predict_lgb5.py --train-file $< \
+                              --test-file $(word 2, $^) \
+                              --predict-valid-file $(PREDICT_VAL) \
+                              --predict-test-file $(PREDICT_TST) \
+                              --n-est $(N) \
+                              --n-leaf $(N_LEAF) \
+                              --lrate $(LRATE) \
+                              --n-min $(N_MIN) \
+                              --subcol $(SUBCOL) \
+                              --subrow $(SUBROW) \
+                              --subrow-freq $(SUBROW_FREQ) \
+                              --early-stop $(N_STOP) \
+                              --cv-id $(lastword $^) > $(PREDICT_TST).log
+
+
+$(SUBMISSION_TST_GZ): $(SUBMISSION_TST)
+	gzip < $< > $@
+                              
+$(METRIC_VAL): $(PREDICT_VAL) $(Y_TRN) | $(DIR_METRIC)
+	python ./src/evaluate.py --predict-file $< \
+                              --target-file $(word 2, $^) > $@
+	cat $@
+
+$(METRIC_VAL).qwk: $(PREDICT_VAL) $(Y_TRN) | $(DIR_METRIC)
+	python src/assignment4.py -i $< -o $<.4
+	python ./src/qwk.py --predict-file $<.4 \
+                           --target-file $(word 2, $^) > $@
+	cat $@
+
+$(SUBMISSION_TST).4: $(PREDICT_TST) $(HEADER) $(ID_TST) | $(DIR_SUB)
+	python src/assignment4.py -i $< -o $<.4
+	paste -d, $(lastword $^) $<.4 > $@.tmp
+	cat $(HEADER) $@.tmp > $@
+	rm $@.tmp
+
+$(PREDICT_TST_FIX): $(PREDICT_TST) | $(DIR_SUB)
+	python ./src/adj_pred.py --input $< \
+                               --output $@
+
+$(PREDICT_TST_FIX2): $(PREDICT_TST) | $(DIR_SUB)
+	python ./src/adj_pred_v2.py --input $< \
+                               --output $@
+
+$(PREDICT_TST_FIX3): $(PREDICT_TST) | $(DIR_SUB)
+	python ./src/adj_pred_v3.py --input $< \
+                               --output $@
+
+$(SUBMISSION_TST_FIX2): $(PREDICT_TST_FIX2) $(HEADER) $(ID_TST) | $(DIR_SUB)
+	paste -d, $(lastword $^) $< > $@.tmp
+	cat $(word 2, $^) $@.tmp > $@
+	rm $@.tmp
+
+$(SUBMISSION_TST_FIX3): $(PREDICT_TST_FIX3) $(HEADER) $(ID_TST) | $(DIR_SUB)
+	paste -d, $(lastword $^) $< > $@.tmp
+	cat $(word 2, $^) $@.tmp > $@
+	rm $@.tmp
+
+clean:: clean_$(ALGO_NAME)
+
+clean_$(ALGO_NAME):
+	-rm $(METRIC_VAL) $(PREDICT_VAL) $(PREDICT_TST) $(SUBMISSION_TST)
+	find . -name '*.pyc' -delete
+
+.DEFAULT_GOAL := all
