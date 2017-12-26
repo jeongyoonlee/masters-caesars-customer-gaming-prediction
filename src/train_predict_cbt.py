@@ -18,7 +18,7 @@ import catboost as cbt
 
 
 def train_predict(train_file, test_file, feature_map_file, predict_valid_file,
-                  predict_test_file, n_est=100,
+                  predict_test_file, feature_importance_file, n_est=100,
                   depth=4, lrate=.1, l2_leaf_reg=1):
 
     model_name = os.path.splitext(os.path.splitext(os.path.basename(predict_test_file))[0])[0]
@@ -72,6 +72,13 @@ def train_predict(train_file, test_file, feature_map_file, predict_valid_file,
 
             n_best = clf.tree_count_
             logging.info('best iteration={}'.format(n_best))
+
+            df = pd.read_csv(feature_map_file, sep='\t', names=['id', 'name', 'type'])
+            df['gain'] = clf.feature_importance_
+            df.loc[:, 'gain'] = df.gain / df.gain.sum()
+            df.sort_values('gain', ascending=False, inplace=True)
+            df.to_csv(feature_importance_file, index=False)
+            logging.info('feature importance is saved in {}'.format(feature_importance_file))
         else:
             clf = cbt.CatBoostRegressor(learning_rate=lrate,
                                          depth=depth,
@@ -108,12 +115,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--train-file', required=True, dest='train_file')
     parser.add_argument('--test-file', required=True, dest='test_file')
-    parser.add_argument('--feature-map-file', required=True,
-                        dest='feature_map_file')
-    parser.add_argument('--predict-valid-file', required=True,
-                        dest='predict_valid_file')
-    parser.add_argument('--predict-test-file', required=True,
-                        dest='predict_test_file')
+    parser.add_argument('--feature-map-file', required=True, dest='feature_map_file')
+    parser.add_argument('--predict-valid-file', required=True, dest='predict_valid_file')
+    parser.add_argument('--predict-test-file', required=True, dest='predict_test_file')
+    parser.add_argument('--feature-importance-file', required=True, dest='feature_importance_file')
     parser.add_argument('--n-est', type=int, dest='n_est')
     parser.add_argument('--depth', type=int)
     parser.add_argument('--lrate', type=float)
@@ -132,6 +137,7 @@ if __name__ == '__main__':
                   feature_map_file=args.feature_map_file,
                   predict_valid_file=args.predict_valid_file,
                   predict_test_file=args.predict_test_file,
+                  feature_importance_file=args.feature_importance_file,
                   n_est=args.n_est,
                   depth=args.depth,
                   lrate=args.lrate,
