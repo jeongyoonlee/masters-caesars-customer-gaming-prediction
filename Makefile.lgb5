@@ -64,27 +64,12 @@ $(SUBMISSION_TST).4: $(PREDICT_TST) $(HEADER) $(ID_TST) | $(DIR_SUB)
 	cat $(HEADER) $@.tmp > $@
 	rm $@.tmp
 
-$(PREDICT_TST_FIX): $(PREDICT_TST) | $(DIR_SUB)
-	python ./src/adj_pred.py --input $< \
-                               --output $@
-
-$(PREDICT_TST_FIX2): $(PREDICT_TST) | $(DIR_SUB)
-	python ./src/adj_pred_v2.py --input $< \
-                               --output $@
-
-$(PREDICT_TST_FIX3): $(PREDICT_TST) | $(DIR_SUB)
-	python ./src/adj_pred_v3.py --input $< \
-                               --output $@
-
-$(SUBMISSION_TST_FIX2): $(PREDICT_TST_FIX2) $(HEADER) $(ID_TST) | $(DIR_SUB)
-	paste -d, $(lastword $^) $< > $@.tmp
-	cat $(word 2, $^) $@.tmp > $@
-	rm $@.tmp
-
-$(SUBMISSION_TST_FIX3): $(PREDICT_TST_FIX3) $(HEADER) $(ID_TST) | $(DIR_SUB)
-	paste -d, $(lastword $^) $< > $@.tmp
-	cat $(word 2, $^) $@.tmp > $@
-	rm $@.tmp
+$(SUBMISSION_TST): $(PREDICT_VAL) $(PREDICT_TST) $(Y_TRN) $(SAMPLE_SUBMISSION) | $(DIR_SUB)
+	python src/write_submission.py --predict-valid-file $< \
+                                   --predict-test-file $(word 2, $^) \
+                                   --target-file $(word 3, $^) \
+                                   --sample-file $(lastword $^) \
+                                   --submission-file $@
 
 clean:: clean_$(ALGO_NAME)
 
