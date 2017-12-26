@@ -69,10 +69,10 @@ def train_predict(train_file, test_file, feature_map_file, predict_valid_file,
 
             importance = clf.get_fscore(feature_map_file)
             df = pd.DataFrame.from_dict(importance, 'index')
-            df.index.name = 'feature'
+            df.index.name = 'name'
             df.columns = ['fscore']
-            df.ix[:, 'fscore'] = df.fscore / df.fscore.sum()
-            df.sort_values('fscore', axis=0, ascending=False, inplace=True)
+            df.loc[:, 'fscore'] = df.fscore / df.fscore.sum()
+            df.sort_values('fscore', ascending=False, inplace=True)
             df.to_csv(feature_importance_file, index=True)
             logging.info('feature importance is saved in {}'.format(feature_importance_file))
         else:

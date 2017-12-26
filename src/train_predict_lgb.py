@@ -19,8 +19,8 @@ import lightgbm as lgb
 np.random.seed(SEED)
 
 
-def train_predict(train_file, test_file, predict_valid_file, predict_test_file,
-                  n_est=100, n_leaf=200, lrate=.1, n_min=8, subcol=.3, subrow=.8,
+def train_predict(train_file, test_file, feature_map_file, predict_valid_file, predict_test_file,
+                  feature_importance_file, n_est=100, n_leaf=200, lrate=.1, n_min=8, subcol=.3, subrow=.8,
                   subrow_freq=100, n_stop=100, retrain=True):
 
     model_name = os.path.splitext(os.path.splitext(os.path.basename(predict_test_file))[0])[0]
@@ -71,6 +71,13 @@ def train_predict(train_file, test_file, predict_valid_file, predict_test_file,
 
             n_best = clf.best_iteration
             logging.info('best iteration={}'.format(n_best))
+
+            df = pd.read_csv(feature_map_file, sep='\t', names=['id', 'name', 'type'])
+            df['gain'] = clf.feature_importance(importance_type='gain', iteration=n_best)
+            df.loc[:, 'gain'] = df.gain / df.gain.sum()
+            df.sort_values('gain', ascending=False, inplace=True)
+            df.to_csv(feature_importance_file, index=False)
+            logging.info('feature importance is saved in {}'.format(feature_importance_file))
         else:
             clf = lgb.train(params,
                             lgb_trn,
@@ -106,17 +113,16 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--train-file', required=True, dest='train_file')
     parser.add_argument('--test-file', required=True, dest='test_file')
-    parser.add_argument('--predict-valid-file', required=True,
-                        dest='predict_valid_file')
-    parser.add_argument('--predict-test-file', required=True,
-                        dest='predict_test_file')
+    parser.add_argument('--feature-map-file', required=True, dest='feature_map_file')
+    parser.add_argument('--predict-valid-file', required=True, dest='predict_valid_file')
+    parser.add_argument('--predict-test-file', required=True, dest='predict_test_file')
+    parser.add_argument('--feature-importance-file', required=True, dest='feature_importance_file')
     parser.add_argument('--n-est', type=int, dest='n_est')
     parser.add_argument('--n-leaf', type=int, dest='n_leaf')
     parser.add_argument('--lrate', type=float)
     parser.add_argument('--subcol', type=float, default=1)
     parser.add_argument('--subrow', type=float, default=.5)
-    parser.add_argument('--subrow-freq', type=int, default=100,
-                        dest='subrow_freq')
+    parser.add_argument('--subrow-freq', type=int, default=100, dest='subrow_freq')
     parser.add_argument('--n-min', type=int, default=1, dest='n_min')
     parser.add_argument('--early-stop', type=int, dest='n_stop')
     parser.add_argument('--retrain', default=False, action='store_true')
@@ -131,8 +137,10 @@ if __name__ == '__main__':
     start = time.time()
     train_predict(train_file=args.train_file,
                   test_file=args.test_file,
+                  feature_map_file=args.feature_map_file,
                   predict_valid_file=args.predict_valid_file,
                   predict_test_file=args.predict_test_file,
+                  feature_importance_file=args.feature_importance_file,
                   n_est=args.n_est,
                   n_leaf=args.n_leaf,
                   lrate=args.lrate,

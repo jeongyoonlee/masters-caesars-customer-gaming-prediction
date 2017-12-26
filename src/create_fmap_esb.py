@@ -1,4 +1,3 @@
-from const import N_CLASS
 import argparse
 
 
@@ -12,9 +11,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     with open(args.feature_map_file, 'w') as f:
-        i = 0
-        for model in enumerate(args.base_models):
-            for cls in range(N_CLASS):
-                f.write('{}\t{}_{}\tq\n'.format(i, model, cls))
-                i += 1
+        for i, model in enumerate(args.base_models):
+            f.write('{}\t{}\tq\n'.format(i, model))
 

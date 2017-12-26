@@ -1,14 +1,10 @@
-include Makefile.feature.esb3
+include Makefile.feature.j2
 
-N = 20000
-N_LEAF = 100
-LRATE = 0.1
-N_MIN = 8
-SUBCOL = 0.3
-SUBROW = 0.8
-SUBROW_FREQ = 100
-N_STOP = 100
-ALGO_NAME := lgb1
+N = 1000
+DEPTH = 6
+LRATE = 0.3
+L2_LEAF_REG = 8
+ALGO_NAME := cbt3
 MODEL_NAME := $(ALGO_NAME)_$(FEATURE_NAME)
 
 LOG_TRN := $(DIR_LOG)/$(MODEL_NAME).log
@@ -28,20 +24,14 @@ retrain: clean_$(ALGO_NAME) submission
 
 $(PREDICT_TST) $(PREDICT_VAL): $(FEATURE_TRN) $(FEATURE_TST) $(FEATURE_MAP) \
                                    | $(DIR_VAL) $(DIR_TST) $(DIR_LOG)
-	python ./src/train_predict_lgb.py --train-file $< \
+	./src/train_predict_cbt.py --train-file $< \
                               --test-file $(word 2, $^) \
-							  --feature-map-file $(word 3, $^) \
+							  --feature-map-file $(lastword $^) \
                               --predict-valid-file $(PREDICT_VAL) \
                               --predict-test-file $(PREDICT_TST) \
-                              --feature-importance-file $(FEATURE_IMP) \
                               --n-est $(N) \
-                              --n-leaf $(N_LEAF) \
                               --lrate $(LRATE) \
-                              --n-min $(N_MIN) \
-                              --subcol $(SUBCOL) \
-                              --subrow $(SUBROW) \
-                              --subrow-freq $(SUBROW_FREQ) \
-                              --early-stop $(N_STOP) \
+                              --l2-leaf-reg $(L2_LEAF_REG) \
 							  --log-file $(LOG_TRN)
 
 $(SUBMISSION_TST_GZ): $(SUBMISSION_TST)
