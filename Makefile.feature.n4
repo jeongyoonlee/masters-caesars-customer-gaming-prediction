@@ -1,0 +1,45 @@
+#--------------------------------------------------------------------------
+# n4: one-hot-encoded feature for NN
+#--------------------------------------------------------------------------
+include Makefile
+
+ENCODER := mlp2
+ENCODER_DIM := 1024
+ENCODER_LRATE := 0.0001
+ENCODER_DROPOUT := 0.2
+
+FEATURE_N := 1000
+FEATURE_N_STOP := 10
+FEATURE_BATCH := 1024
+
+FEATURE_NAME := n4
+
+BASE_FEATURE_NAME := n1
+BASE_FEATURE_TRN := $(DIR_FEATURE)/$(BASE_FEATURE_NAME).trn.h5
+BASE_FEATURE_TST := $(DIR_FEATURE)/$(BASE_FEATURE_NAME).tst.h5
+
+FEATURE_MODEL_FILE := $(DIR_MODEL)/$(FEATURE_NAME).h5
+FEATURE_LOG_FILE := $(DIR_LOG)/$(FEATURE_NAME).log
+
+FEATURE_TRN := $(DIR_FEATURE)/$(FEATURE_NAME).trn.h5
+FEATURE_TST := $(DIR_FEATURE)/$(FEATURE_NAME).tst.h5
+FEATURE_MAP := $(DIR_FEATURE)/$(FEATURE_NAME).fmap
+
+$(BASE_FEATURE_TRN) $(BASE_FEATURE_TST):
+	make -f Makefile.feature.$(BASE_FEATURE_NAME) $(BASE_FEATURE_TRN)
+
+$(FEATURE_TRN) $(FEATURE_TST) $(FEATURE_MAP): $(BASE_FEATURE_TRN) $(BASE_FEATURE_TST) | $(DIR_FEATURE)
+	python ./src/train_autoencoder.py --base-train-feature-file $< \
+                                             --base-test-feature-file $(lastword $^) \
+                                             --train-feature-file $(FEATURE_TRN) \
+                                             --test-feature-file $(FEATURE_TST) \
+                                             --feature-map-file $(FEATURE_MAP) \
+                                             --encoder-name $(ENCODER) \
+                                             --encoder-dim $(ENCODER_DIM) \
+                                             --lrate $(ENCODER_LRATE) \
+                                             --dropout $(ENCODER_DROPOUT) \
+											 --model-file $(FEATURE_MODEL_FILE) \
+											 --log-file $(FEATURE_LOG_FILE) \
+											 --n-est $(FEATURE_N) \
+											 --n-stop $(FEATURE_N_STOP) \
+											 --batch-size $(FEATURE_BATCH)
