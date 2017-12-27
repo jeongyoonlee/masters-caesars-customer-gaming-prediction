@@ -74,7 +74,7 @@ def train_predict(train_file, test_file, feature_map_file, predict_valid_file,
             logging.info('best iteration={}'.format(n_best))
 
             df = pd.read_csv(feature_map_file, sep='\t', names=['id', 'name', 'type'])
-            df['gain'] = clf.feature_importance_
+            df['gain'] = clf.feature_importances_
             df.loc[:, 'gain'] = df.gain / df.gain.sum()
             df.sort_values('gain', ascending=False, inplace=True)
             df.to_csv(feature_importance_file, index=False)
