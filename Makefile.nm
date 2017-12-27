@@ -1,9 +1,10 @@
-include Makefile.feature.esb.esb3
+include Makefile.feature.esb4
 
-N := 100
+N := 20
 ALGO_NAME := nm
 MODEL_NAME := $(ALGO_NAME)_$(FEATURE_NAME)
 
+LOG_TRN := $(DIR_LOG)/$(MODEL_NAME).log
 METRIC_VAL := $(DIR_METRIC)/$(MODEL_NAME).val.txt
 
 PREDICT_VAL := $(DIR_VAL)/$(MODEL_NAME).val.yht
@@ -18,23 +19,27 @@ submission: $(SUBMISSION_TST)
 retrain: clean_$(ALGO_NAME) submission
 
 $(PREDICT_TST) $(PREDICT_VAL): $(FEATURE_TRN) $(FEATURE_TST) \
-                                   | $(DIR_VAL) $(DIR_TST)
+                                   | $(DIR_VAL) $(DIR_TST) $(DIR_LOG)
 	python ./src/train_predict_nm.py --train-file $< \
                                      --test-file $(word 2, $^) \
                                      --predict-valid-file $(PREDICT_VAL) \
                                      --predict-test-file $(PREDICT_TST) \
-                                     --n-est $(N)
+                                     --n-est $(N) \
+							  		 --log-file $(LOG_TRN)
 
 $(SUBMISSION_TST_GZ): $(SUBMISSION_TST)
 	gzip $<
 
-$(SUBMISSION_TST): $(PREDICT_TST) $(HEADER) $(ID_TST) | $(DIR_SUB)
-	paste -d, $(lastword $^) $< > $@.tmp
-	cat $(word 2, $^) $@.tmp > $@
-	rm $@.tmp
+$(SUBMISSION_TST): $(PREDICT_VAL) $(PREDICT_TST) $(Y_TRN) $(SAMPLE_SUBMISSION) | $(DIR_SUB)
+	python src/write_submission.py --predict-valid-file $< \
+								   --predict-test-file $(word 2, $^) \
+								   --target-file $(word 3, $^) \
+								   --sample-file $(lastword $^) \
+								   --submission-file $@
+
 
 $(METRIC_VAL): $(PREDICT_VAL) $(Y_TRN) | $(DIR_METRIC)
-	./src/evaluate.py -t $(lastword $^) -p $< > $@
+	./src/evaluate.py --target-file $(lastword $^) --predict-file $< > $@
 	cat $@
 
 
