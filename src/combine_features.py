@@ -2,6 +2,7 @@ from scipy import sparse
 import argparse
 import logging
 import numpy as np
+import os
 import pandas as pd
 import time
 
@@ -35,7 +36,7 @@ if __name__ == '__main__':
     if is_sparse:
         X = sparse.hstack(Xs).todense()
     else:
-        X = np.hstack(X)
+        X = np.hstack(Xs)
 
     idx = np.array(X.std(axis=0) != 0).reshape(-1, )
     X = X[:, idx]
@@ -50,7 +51,7 @@ if __name__ == '__main__':
     if is_sparse:
         X = sparse.hstack(Xs).todense()
     else:
-        X = np.hstack(X)
+        X = np.hstack(Xs)
 
     X = X[:, idx]
     save_data(X, y, args.test_feature_file)
@@ -58,8 +59,10 @@ if __name__ == '__main__':
     logging.info('combining base feature maps')
     df = []
     for base_feature_map in args.base_feature_maps:
+        feature_name = os.path.splitext(base_feature_map)[0]
         df_map = pd.read_csv(base_feature_map, sep='\t', header=None, index_col=0)
         df_map.columns = ['fname', 'ftype']
+        df_map.fname = df_map.fname.apply(lambda x: '{}_{}'.format(feature_name, x))
         df.append(df_map)
 
     df = pd.concat(df, axis=0, ignore_index=True)
