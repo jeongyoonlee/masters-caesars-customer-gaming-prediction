@@ -59,7 +59,7 @@ if __name__ == '__main__':
     logging.info('combining base feature maps')
     df = []
     for base_feature_map in args.base_feature_maps:
-        feature_name = os.path.splitext(base_feature_map)[0]
+        feature_name = os.path.splitext(os.path.basename(base_feature_map))[0]
         df_map = pd.read_csv(base_feature_map, sep='\t', header=None, index_col=0)
         df_map.columns = ['fname', 'ftype']
         df_map.fname = df_map.fname.apply(lambda x: '{}_{}'.format(feature_name, x))
