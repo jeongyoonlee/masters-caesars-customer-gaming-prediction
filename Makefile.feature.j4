@@ -1,5 +1,5 @@
 #--------------------------------------------------------------------------
-# j4: benchmark feature
+# j4: mean-target features. more interaction features different from j2
 #--------------------------------------------------------------------------
 include Makefile
 
