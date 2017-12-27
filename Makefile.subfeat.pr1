@@ -1,0 +1,28 @@
+#--------------------------------------------------------------------------
+# subfeat pr
+# idea from https://www.kaggle.com/c/prudential-life-insurance-assessment/discussion/19003
+#--------------------------------------------------------------------------
+include Makefile
+
+BASE_FEATURE_NAME := h1
+SUBFEAT_NAME := pr_$(BASE_FEATURE_NAME)
+
+FEATURE_TRN := $(DIR_FEATURE)/$(FEATURE_NAME).trn.h5
+FEATURE_TST := $(DIR_FEATURE)/$(FEATURE_NAME).tst.h5
+
+SUBFEAT_TRN = $(SUBFEAT_TRN)
+SUBFEAT_TST = $(SUBFEAT_TST)
+
+Y_TRN_BINARY = $(DIR_FEATURE)/y_binary.trn.txt
+
+all: $(FEATURE_TRN)
+
+$(FEATURE_TRN) $(FEATURE_TST): $(DATA_TRN) $(DATA_TST) | $(DIR_FEATURE)
+	python ./src/generate_pr1.py --train-file $< \
+                                             --test-file $(word 2, $^) \
+                                             --train-feature-file $(FEATURE_TRN) \
+                                             --test-feature-file $(FEATURE_TST) 
+
+$(Y_TRN_BINARY): $(Y_TRN) | $(DIR_FEATURE)
+	python ./src/convert_y.py --raw-target $< \
+                              --binary-target $@
