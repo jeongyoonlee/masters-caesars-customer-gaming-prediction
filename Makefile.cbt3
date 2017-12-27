@@ -1,4 +1,4 @@
-include Makefile.feature.j2
+include Makefile.feature.j5
 
 N = 1000
 DEPTH = 6
@@ -22,13 +22,14 @@ validation: $(METRIC_VAL)
 submission: $(SUBMISSION_TST)
 retrain: clean_$(ALGO_NAME) submission
 
-$(PREDICT_TST) $(PREDICT_VAL): $(FEATURE_TRN) $(FEATURE_TST) $(FEATURE_MAP) \
+$(PREDICT_TST) $(PREDICT_VAL) $(FEATURE_IMP): $(FEATURE_TRN) $(FEATURE_TST) $(FEATURE_MAP) \
                                    | $(DIR_VAL) $(DIR_TST) $(DIR_LOG)
 	./src/train_predict_cbt.py --train-file $< \
                               --test-file $(word 2, $^) \
 							  --feature-map-file $(lastword $^) \
                               --predict-valid-file $(PREDICT_VAL) \
                               --predict-test-file $(PREDICT_TST) \
+							  --feature-importance-file $(FEATURE_IMP) \
                               --n-est $(N) \
                               --lrate $(LRATE) \
                               --l2-leaf-reg $(L2_LEAF_REG) \
