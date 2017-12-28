@@ -27,6 +27,35 @@ def generate_feature(train_file, test_file, train_feature_file,
 
     n_trn = trn.shape[0]
 
+    logging.info('adding a flag to indicate if a customer_id exists in both training and test data')
+    trn['cid_both'] = trn.customer_id.isin(tst.customer_id.tolist()).astype(np.int64)
+    tst['cid_both'] = tst.customer_id.isin(trn.customer_id.tolist()).astype(np.int64)
+    num_cols = ['cid_both']
+
+    logging.info('converting the date column into datetime')
+    trn['date'] = pd.to_datetime(trn.date, format='%m%d%Y')
+    tst['date'] = pd.to_datetime(tst.date, format='%m%d%Y')
+
+    logging.info('add the month feature')
+    trn['month'] = trn.date.dt.month
+    tst['month'] = tst.date.dt.month
+
+    logging.info('combining cid_5, month, and market')
+    trn['cid_5_month_market'] = (trn.customer_id // 1e7) * 1e4 + trn.month * 100 + trn.market.str[1:].astype(int)
+    tst['cid_5_month_market'] = (tst.customer_id // 1e7) * 1e4 + tst.month * 100 + tst.market.str[1:].astype(int)
+
+    logging.info('combining cid_3, month, and market')
+    trn['cid_3_month_market'] = ((trn.customer_id // 1e4) % 1e3) * 1e4 + trn.month * 100 + trn.market.str[1:].astype(int)
+    tst['cid_3_month_market'] = ((tst.customer_id // 1e4) % 1e3) * 1e4 + tst.month * 100 + tst.market.str[1:].astype(int)
+
+    cat_cols = ['cid_5_month_market', 'cid_3_month_market']
+
+    logging.info('label encoding categorical variables')
+    lbe = LabelEncoder(min_obs=10)
+    trn.ix[:, cat_cols] = lbe.fit_transform(trn[cat_cols].values)
+    tst.ix[:, cat_cols] = lbe.transform(tst[cat_cols].values)
+
+
     logging.info('splitting customer_ids into first 5 and next 3 digits')
     trn['cid_5'] = trn.customer_id // 1e7
     tst['cid_5'] = tst.customer_id // 1e7
@@ -97,6 +126,16 @@ def generate_feature(train_file, test_file, train_feature_file,
             mapping = mean_target.to_dict()['target']
             cv_trn[col] = cv_trn[col].map(mapping)
             cv_tst[col] = cv_tst[col].map(mapping)
+
+    logging.info('mean-target encoding for categorical columns')
+    for col in cat_cols:
+        colname = 'mt_{}'.format(col)
+        mean_target = trn[[col, 'target']].groupby(col).mean()
+        mapping = mean_target.to_dict()['target']
+        trn[colname] = trn[col].map(mapping)
+        tst[colname] = tst[col].map(mapping)
+        num_cols.append(colname)
+
 
         cv_feature_cols += cat_cols
 
