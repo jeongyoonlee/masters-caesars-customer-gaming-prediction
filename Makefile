@@ -35,6 +35,8 @@ HEADER := $(DIR_DATA)/header.csv
 Y_TRN:= $(DIR_FEATURE)/y.trn.txt
 Y_TST:= $(DIR_FEATURE)/y.tst.txt
 
+CV_ID := $(DIR_FEATURE)/cvid.txt
+
 $(DIRS):
 	mkdir -p $@
 
@@ -50,6 +52,11 @@ $(Y_TST): $(SAMPLE_SUBMISSION) | $(DIR_FEATURE)
 $(Y_TRN): $(DATA_TRN) | $(DIR_FEATURE)
 	cut -d, -f46 $< | tail -n +2 > $@
 
+$(CV_ID) $(Y_TRN): $(DATA_TRN) | $(DIR_FEATURE)
+	python ./src/cal_cv.py --input $< \
+                           --cv $(CV_ID) \
+                           --ytrn $(Y_TRN)
+                           
 # cleanup
 clean::
 	find . -name '*.pyc' -delete

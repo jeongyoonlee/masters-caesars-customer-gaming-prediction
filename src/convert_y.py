@@ -13,15 +13,17 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--raw-target', required=True, dest='raw_target')
     parser.add_argument('--binary-target', required=True, dest='binary_target')
+    parser.add_argument('--exact-max', dest='exact_max', default=14, type=int)
+    parser.add_argument('--th-max', dest='th_max', default=14, type=int)
     args = parser.parse_args()    
 
     y = np.loadtxt(args.raw_target, delimiter=',')
 
     y_binary = []
 
-    for i in xrange(0, 15):
+    for i in xrange(0, args.exact_max + 1):
         y_binary.append(labels_exact(y, i))
-    for i in xrange(2, 15):
+    for i in xrange(2, args.th_max + 1):
         y_binary.append(labels_less(y, i))
 
     y_array = np.array(y_binary)

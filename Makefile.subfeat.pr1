@@ -5,24 +5,53 @@
 include Makefile
 
 BASE_FEATURE_NAME := h1
-SUBFEAT_NAME := pr_$(BASE_FEATURE_NAME)
+MODEL := lgbbc1
+SUBFEAT_NAME := pr_$(BASE_FEATURE_NAME)_$(MODEL)
+FEATURE_NAME := $(SUBFEAT_NAME)
+
+BASE_FEATURE_TRN := $(DIR_FEATURE)/$(BASE_FEATURE_NAME).trn.h5
+BASE_FEATURE_TST := $(DIR_FEATURE)/$(BASE_FEATURE_NAME).tst.h5
 
 FEATURE_TRN := $(DIR_FEATURE)/$(FEATURE_NAME).trn.h5
 FEATURE_TST := $(DIR_FEATURE)/$(FEATURE_NAME).tst.h5
 
-SUBFEAT_TRN = $(SUBFEAT_TRN)
-SUBFEAT_TST = $(SUBFEAT_TST)
+SUBFEAT_TRN := $(SUBFEAT_TRN)
+SUBFEAT_TST := $(SUBFEAT_TST)
 
-Y_TRN_BINARY = $(DIR_FEATURE)/y_binary.trn.txt
+EXT_MAX := 10
+TH_MAX := 10
+Y_TRN_BINARY := $(DIR_FEATURE)/y_binary_$(EXT_MAX)_$(TH_MAX).trn.txt
+
+N = 5000
+N_LEAF = 200
+LRATE = 0.2
+N_MIN = 8
+SUBCOL = 0.5
+SUBROW = 0.8
+SUBROW_FREQ = 100
+N_STOP = 100
 
 all: $(FEATURE_TRN)
+target: $(Y_TRN_BINARY)
 
-$(FEATURE_TRN) $(FEATURE_TST): $(DATA_TRN) $(DATA_TST) | $(DIR_FEATURE)
+$(FEATURE_TRN) $(FEATURE_TST): $(BASE_FEATURE_TRN) $(BASE_FEATURE_TST) $(Y_TRN_BINARY) $(CV_ID) | $(DIR_FEATURE)
 	python ./src/generate_pr1.py --train-file $< \
-                                             --test-file $(word 2, $^) \
-                                             --train-feature-file $(FEATURE_TRN) \
-                                             --test-feature-file $(FEATURE_TST) 
+                              --test-file $(word 2, $^) \
+                              --binary-target-file $(word 3, $^) \
+                              --predict-valid-file $(FEATURE_TRN) \
+                              --predict-test-file $(FEATURE_TST) \
+                              --n-est $(N) \
+                              --n-leaf $(N_LEAF) \
+                              --lrate $(LRATE) \
+                              --n-min $(N_MIN) \
+                              --subcol $(SUBCOL) \
+                              --subrow $(SUBROW) \
+                              --subrow-freq $(SUBROW_FREQ) \
+                              --early-stop $(N_STOP) \
+                              --cv-id $(lastword $^) > $(FEATURE_TST).log 
 
 $(Y_TRN_BINARY): $(Y_TRN) | $(DIR_FEATURE)
 	python ./src/convert_y.py --raw-target $< \
-                              --binary-target $@
+                              --binary-target $@ \
+                              --exact-max $(EXT_MAX) \
+                              --th-max $(TH_MAX)
