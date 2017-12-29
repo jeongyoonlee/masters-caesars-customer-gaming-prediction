@@ -52,7 +52,7 @@ $(Y_TST): $(SAMPLE_SUBMISSION) | $(DIR_FEATURE)
 $(Y_TRN): $(DATA_TRN) | $(DIR_FEATURE)
 	cut -d, -f46 $< | tail -n +2 > $@
 
-$(CV_ID) $(Y_TRN): $(DATA_TRN) | $(DIR_FEATURE)
+$(CV_ID): $(DATA_TRN) | $(DIR_FEATURE)
 	python ./src/cal_cv.py --input $< \
                            --cv $(CV_ID) \
                            --ytrn $(Y_TRN)
