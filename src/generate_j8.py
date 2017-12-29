@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from sklearn.model_selection import KFold
 import argparse
 import logging
 import numpy as np
@@ -18,7 +17,8 @@ COLS_TO_DROP = ['customer_id', 'date', 'f_10', 'f_19', 'f_39']
 
 
 def generate_feature(train_file, test_file, train_feature_file,
-                     test_feature_file, feature_map_file):
+                     test_feature_file, feature_map_file,
+                     cv_id_file):
     logging.info('loading raw data')
     trn = pd.read_csv(train_file)
     tst = pd.read_csv(test_file)
@@ -107,16 +107,17 @@ def generate_feature(train_file, test_file, train_feature_file,
                          '{}x{}'.format(col1, col2),
                          '{}/{}'.format(col1, col2)]
 
-    logging.info('saving non-CV features')
-    save_data(trn[feature_cols].values.astype(float), y, train_feature_file)
-    save_data(tst[feature_cols].values.astype(float), None, test_feature_file)
-
     logging.info('generate CV features')
     feature_name, feature_ext = os.path.splitext(train_feature_file)
     feature_name = os.path.splitext(feature_name)[0]
 
-    cv = KFold(n_splits=N_FOLD, shuffle=True, random_state=SEED)
-    for i, (i_trn, i_val) in enumerate(cv.split(y), 1):
+    logging.info('Loading CV Ids')
+    cv_id = np.loadtxt(cv_id_file)
+
+    for i in range(1, N_FOLD + 1):
+        i_trn = np.where(cv_id != i)[0]
+        i_val = np.where(cv_id == i)[0]
+
         cv_feature_cols = []
         logging.info('mean-target encoding for categorical columns for CV #{}'.format(i))
         cv_trn = trn[cat_cols + [TARGET]].copy()
@@ -126,16 +127,6 @@ def generate_feature(train_file, test_file, train_feature_file,
             mapping = mean_target.to_dict()['target']
             cv_trn[col] = cv_trn[col].map(mapping)
             cv_tst[col] = cv_tst[col].map(mapping)
-
-    logging.info('mean-target encoding for categorical columns')
-    for col in cat_cols:
-        colname = 'mt_{}'.format(col)
-        mean_target = trn[[col, 'target']].groupby(col).mean()
-        mapping = mean_target.to_dict()['target']
-        trn[colname] = trn[col].map(mapping)
-        tst[colname] = tst[col].map(mapping)
-        num_cols.append(colname)
-
 
         cv_feature_cols += cat_cols
 
@@ -152,6 +143,10 @@ def generate_feature(train_file, test_file, train_feature_file,
         logging.info('saving features for CV #{}'.format(i))
         save_data(cv_trn[cv_feature_cols].values.astype(float), y, '{}.trn{}{}'.format(feature_name, i, feature_ext))
         save_data(cv_tst[cv_feature_cols].values.astype(float), None, '{}.tst{}{}'.format(feature_name, i, feature_ext))
+
+    logging.info('saving non-CV features')
+    save_data(trn[feature_cols].values.astype(float), y, train_feature_file)
+    save_data(tst[feature_cols].values.astype(float), None, test_feature_file)
 
     with open(feature_map_file, 'w') as f:
         for i, col in enumerate(feature_cols + cv_feature_cols):
@@ -170,6 +165,7 @@ if __name__ == '__main__':
     parser.add_argument('--train-feature-file', required=True, dest='train_feature_file')
     parser.add_argument('--test-feature-file', required=True, dest='test_feature_file')
     parser.add_argument('--feature-map-file', required=True, dest='feature_map_file')
+    parser.add_argument('--cv-id', required=True, dest='cv_id_file')
 
     args = parser.parse_args()
 
@@ -178,6 +174,7 @@ if __name__ == '__main__':
                      args.test_file,
                      args.train_feature_file,
                      args.test_feature_file,
-                     args.feature_map_file)
+                     args.feature_map_file,
+                     args.cv_id_file)
     logging.info('finished ({:.2f} sec elasped)'.format(time.time() - start))
 

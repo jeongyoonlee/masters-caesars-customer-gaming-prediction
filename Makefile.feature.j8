@@ -1,0 +1,20 @@
+#--------------------------------------------------------------------------
+# j8: mean-target features. on top of j7
+#--------------------------------------------------------------------------
+include Makefile
+
+FEATURE_NAME := j8
+
+FEATURE_TRN := $(DIR_FEATURE)/$(FEATURE_NAME).trn.h5
+FEATURE_TST := $(DIR_FEATURE)/$(FEATURE_NAME).tst.h5
+FEATURE_MAP := $(DIR_FEATURE)/$(FEATURE_NAME).fmap
+
+all: $(FEATURE_TRN) $(FEATURE_TST)
+
+$(FEATURE_TRN) $(FEATURE_TST) $(FEATURE_MAP): $(DATA_TRN) $(DATA_TST) $(CV_ID) | $(DIR_FEATURE)
+	python ./src/generate_$(FEATURE_NAME).py --train-file $< \
+                                             --test-file $(word 2, $^) \
+                                             --train-feature-file $(FEATURE_TRN) \
+                                             --test-feature-file $(FEATURE_TST) \
+                                             --feature-map-file $(FEATURE_MAP) \
+                                             --cv-id $(lastword $^)
