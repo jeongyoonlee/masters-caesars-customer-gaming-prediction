@@ -1,0 +1,65 @@
+include Makefile.feature.n3
+
+GPU = 3
+N = 100
+BATCH_SIZE = 1024
+N_STOP = 10
+LRATE = 0.001
+NN := nn1
+ALGO_NAME := $(NN)
+MODEL_NAME := $(ALGO_NAME)_$(FEATURE_NAME)
+
+LOG_TRN := $(DIR_LOG)/$(MODEL_NAME).log
+MODEL_TRN := $(DIR_MODEL)/$(MODEL_NAME).trn.h5
+METRIC_VAL := $(DIR_METRIC)/$(MODEL_NAME).val.txt
+
+PREDICT_VAL := $(DIR_VAL)/$(MODEL_NAME).val.yht
+PREDICT_TST := $(DIR_TST)/$(MODEL_NAME).tst.yht
+
+SUBMISSION_TST := $(DIR_SUB)/$(MODEL_NAME).sub.csv
+SUBMISSION_TST_GZ := $(DIR_SUB)/$(MODEL_NAME).sub.csv.gz
+SUBMISSION_ADJ_TST_GZ := $(DIR_SUB)/$(MODEL_NAME).adj.sub.csv.gz
+
+all: validation submission
+validation: $(METRIC_VAL)
+submission: $(SUBMISSION_ADJ_TST_GZ)
+retrain: clean_$(ALGO_NAME) submission
+
+$(PREDICT_TST) $(PREDICT_VAL): $(FEATURE_TRN) $(FEATURE_TST) \
+                                   | $(DIR_VAL) $(DIR_TST) $(DIR_LOG)
+	python ./src/train_predict_nn.py --train-file $< \
+                              --test-file $(word 2, $^) \
+							  --model-file $(MODEL_TRN) \
+                              --predict-valid-file $(PREDICT_VAL) \
+                              --predict-test-file $(PREDICT_TST) \
+							  --gpu $(GPU) \
+							  --nn $(NN) \
+                              --batch-size $(BATCH_SIZE) \
+                              --n-est $(N) \
+                              --early-stop $(N_STOP) \
+							  --log-file $(LOG_TRN)
+
+$(SUBMISSION_ADJ_TST_GZ): $(SUBMISSION_TST_GZ)
+	python src/adjust_submission.py --submission-file $< --adjusted-file $@
+
+$(SUBMISSION_TST_GZ): $(SUBMISSION_TST)
+	gzip $<
+
+$(SUBMISSION_TST): $(PREDICT_TST) $(HEADER) $(ID_TST) | $(DIR_SUB)
+	paste -d, $(lastword $^) $< > $@.tmp
+	cat $(word 2, $^) $@.tmp > $@
+	rm $@.tmp
+
+$(METRIC_VAL): $(PREDICT_VAL) $(Y_TRNVAL) | $(DIR_METRIC)
+	python ./src/evaluate.py --predict-file $< \
+                             --target-file $(lastword $^) > $@
+	cat $@
+
+
+clean:: clean_$(ALGO_NAME)
+
+clean_$(ALGO_NAME):
+	-rm $(METRIC_VAL) $(PREDICT_VAL) $(PREDICT_TST) $(SUBMISSION_TST)
+	find . -name '*.pyc' -delete
+
+.DEFAULT_GOAL := all
