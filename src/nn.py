@@ -21,12 +21,12 @@ def nn1(input_dim, n_feature, learning_rate=0.0001, n_class=1):
     x = Activation('relu')(x)
     x = Dropout(0.2)(x)
 
-    x = Dense(512)(nn_input)
+    x = Dense(512)(x)
     x = BatchNormalization()(x)
     x = Activation('relu')(x)
     x = Dropout(0.2)(x)
 
-    x = Dense(256)(nn_input)
+    x = Dense(256)(x)
     x = BatchNormalization()(x)
     x = Activation('relu')(x)
     x = Dropout(0.2)(x)
