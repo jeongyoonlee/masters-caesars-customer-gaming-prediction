@@ -53,6 +53,7 @@ if __name__ == '__main__':
     parser.add_argument('--predict-file', required=True, dest='predict_file')
     parser.add_argument('--sample-file', required=True, dest='sample_file')
     parser.add_argument('--submission-file', required=True, dest='submission_file')
+    parser.add_argument('--cutoff-file', default=None, dest='cutoff_file')
 
     args = parser.parse_args()
 
@@ -62,7 +63,13 @@ if __name__ == '__main__':
 
     start = time.time()
     logging.info('writing a submission file by applying the cutoffs to test predictions')
-    x0 = (1.5, 2.2, 3.0, 3.8, 4.5, 5.2, 6.0, 6.8, 7.5, 8.3, 9.1, 9.9, 10.7, 11.6, 12.4, 13.2)
+    if args.cutoff_file is not None:
+        x0 = np.loadtxt(args.cutoff_file).tolist()
+    else:
+        x0 = (1.5, 2.2, 3.0, 3.8, 4.5, 5.2, 6.0, 6.8, 7.5, 8.3, 9.1, 9.9, 10.7, 11.6, 12.4, 13.2)
+
+    logging.info('using the cutoffs: {}'.format(x0))
+
     p_tst = np.loadtxt(args.predict_file)
     sub = pd.read_csv(args.sample_file, index_col=0)
     sub.target = preds_to_digits(x0, p_tst)

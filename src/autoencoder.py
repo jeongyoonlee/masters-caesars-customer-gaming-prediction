@@ -9,6 +9,41 @@ def get_model(model_name, input_dim, encoder_dim, **kwargs):
     return eval(model_name)(input_dim, encoder_dim, **kwargs)
 
 
+def mlp3(input_dim, encoder_dim, learning_rate=1e-4, dropout=0.3):
+    inputs = Input(shape=(input_dim,))
+    encoded = Dense(1024)(inputs)
+    encoded = BatchNormalization()(encoded)
+    encoded = Activation('relu')(encoded)
+    encoded = Dense(1024)(encoded)
+    encoded = BatchNormalization()(encoded)
+    encoded = Activation('relu')(encoded)
+    encoded = Dense(1024)(encoded)
+    encoded = BatchNormalization()(encoded)
+    encoded = Activation('relu')(encoded)
+
+    encoded = Dense(encoder_dim)(encoded)
+    encoded = BatchNormalization()(encoded)
+    encoded = Activation('relu')(encoded)
+
+    decoded = Dense(1024)(encoded)
+    decoded = BatchNormalization()(decoded)
+    decoded = Activation('relu')(decoded)
+    decoded = Dense(1024)(decoded)
+    decoded = BatchNormalization()(decoded)
+    decoded = Activation('relu')(decoded)
+    decoded = Dense(1024)(decoded)
+    decoded = BatchNormalization()(decoded)
+    decoded = Activation('relu')(decoded)
+    decoded = Dense(input_dim, activation='sigmoid')(decoded)
+
+    autoencoder = Model(inputs, decoded)
+    autoencoder.compile(optimizer=Adadelta(lr=learning_rate), loss='binary_crossentropy')
+
+    encoder = Model(inputs, encoded)
+
+    return autoencoder, encoder
+
+
 def mlp2(input_dim, encoder_dim, learning_rate=1e-4, dropout=0.3):
     inputs = Input(shape=(input_dim,))
     encoded = Dense(1024)(inputs)

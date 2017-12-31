@@ -30,11 +30,11 @@ def assignment4(expected, min_val=0, max_val=20):
 
     total = float(sum(DISTRIBUTION.values()))
     threshold = []
-    for i in xrange(min_val, max_val):
+    for i in range(min_val, max_val):
         threshold.append( sorted_expected[int(sum([ DISTRIBUTION[x] for x in range(min_val, i+1) ]) / total * len(sorted_expected))] )
 
-    print threshold
-    
+    print(threshold)
+
     return [ bisect.bisect_right(threshold, x) for x in expected ]
 
 if __name__ == '__main__':

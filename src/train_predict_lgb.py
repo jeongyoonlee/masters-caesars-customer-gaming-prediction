@@ -55,10 +55,25 @@ def train_predict(train_file, test_file, feature_map_file, predict_valid_file, p
 
     p_val = np.zeros(X.shape[0])
     p_tst = np.zeros(X_tst.shape[0])
+    feature_name, feature_ext = os.path.splitext(train_file)
+    feature_name = os.path.splitext(feature_name)[0]
+
     for i, (i_trn, i_val) in enumerate(cv.split(y), 1):
         logging.info('Training model #{}'.format(i))
-        lgb_trn = lgb.Dataset(X[i_trn], y[i_trn])
-        lgb_val = lgb.Dataset(X[i_val], y[i_val])
+        cv_train_file = '{}.trn{}{}'.format(feature_name, i, feature_ext)
+        cv_test_file = '{}.tst{}{}'.format(feature_name, i, feature_ext)
+
+        if os.path.exists(cv_train_file):
+            is_cv_feature = True
+            X_cv, _ = load_data(cv_train_file)
+            X_tst_cv, _ = load_data(cv_test_file)
+
+            lgb_trn = lgb.Dataset(np.hstack((X[i_trn], X_cv[i_trn])), y[i_trn])
+            lgb_val = lgb.Dataset(np.hstack((X[i_val], X_cv[i_val])), y[i_val])
+        else:
+            is_cv_feature = False
+            lgb_trn = lgb.Dataset(X[i_trn], y[i_trn])
+            lgb_val = lgb.Dataset(X[i_val], y[i_val])
 
         if i == 1:
             logging.info('Training with early stopping')
@@ -85,11 +100,18 @@ def train_predict(train_file, test_file, feature_map_file, predict_valid_file, p
                             valid_sets=lgb_val,
                             verbose_eval=100)
 
-        p_val[i_val] = clf.predict(X[i_val])
+        if is_cv_feature:
+            p_val[i_val] = clf.predict(np.hstack((X[i_val], X_cv[i_val])))
+        else:
+            p_val[i_val] = clf.predict(X[i_val])
+
         logging.info('CV #{}: {:.6f}'.format(i, kappa(y[i_val], p_val[i_val])))
 
         if not retrain:
-            p_tst += clf.predict(X_tst) / N_FOLD
+            if is_cv_feature:
+                p_tst += clf.predict(np.hstack((X_tst, X_tst_cv))) / N_FOLD
+            else:
+                p_tst += clf.predict(X_tst) / N_FOLD
 
     logging.info('CV: {:.6f}'.format(kappa(y, p_val)))
     logging.info('Saving validation predictions...')

@@ -46,9 +46,27 @@ def train_predict(train_file, test_file, feature_map_file, predict_valid_file,
 
     p_val = np.zeros(X.shape[0])
     p_tst = np.zeros(X_tst.shape[0])
-    for i, (i_trn, i_val) in enumerate(cv.split(y), 1):
+    feature_name, feature_ext = os.path.splitext(train_file)
+    feature_name = os.path.splitext(feature_name)[0]
 
+    for i, (i_trn, i_val) in enumerate(cv.split(y), 1):
         logging.info('Training model #{}'.format(i))
+        cv_train_file = '{}.trn{}{}'.format(feature_name, i, feature_ext)
+        cv_test_file = '{}.tst{}{}'.format(feature_name, i, feature_ext)
+
+        if os.path.exists(cv_train_file):
+            is_cv_feature = True
+            X_cv, _ = load_data(cv_train_file)
+            X_tst_cv, _ = load_data(cv_test_file)
+
+            X_trn = np.hstack((X[i_trn], X_cv[i_trn]))
+            X_val = np.hstack((X[i_val], X_cv[i_val]))
+            X_tst_ = np.hstack((X_tst, X_tst_cv))
+        else:
+            is_cv_feature = False
+            X_trn = X[i_trn]
+            X_val = X[i_val]
+            X_tst_ = X_tst
 
         if i == 1:
             logging.info('Training with early stopping')
@@ -61,13 +79,13 @@ def train_predict(train_file, test_file, feature_map_file, predict_valid_file,
                                          thread_count=N_JOB)
 
             if len(cat_cols) > 0:
-                clf = clf.fit(X[i_trn], y[i_trn],
-                              eval_set=[X[i_val], y[i_val]],
+                clf = clf.fit(X_trn, y[i_trn],
+                              eval_set=[X_val, y[i_val]],
                               use_best_model=True,
                               cat_features=cat_cols)
             else:
-                clf = clf.fit(X[i_trn], y[i_trn],
-                              eval_set=[X[i_val], y[i_val]],
+                clf = clf.fit(X_trn, y[i_trn],
+                              eval_set=[X_val, y[i_val]],
                               use_best_model=True)
 
             n_best = clf.tree_count_
@@ -89,19 +107,19 @@ def train_predict(train_file, test_file, feature_map_file, predict_valid_file,
                                          thread_count=N_JOB)
 
             if len(cat_cols) > 0:
-                clf = clf.fit(X[i_trn], y[i_trn],
-                              eval_set=(X[i_val], y[i_val]),
+                clf = clf.fit(X_trn, y[i_trn],
+                              eval_set=(X_val, y[i_val]),
                               use_best_model=False,
                               cat_features=cat_cols)
             else:
-                clf = clf.fit(X[i_trn], y[i_trn],
-                              eval_set=(X[i_val], y[i_val]),
+                clf = clf.fit(X_trn, y[i_trn],
+                              eval_set=(X_val, y[i_val]),
                               use_best_model=False)
 
-        p_val[i_val] = clf.predict(X[i_val])
+        p_val[i_val] = clf.predict(X_val)
         logging.info('CV #{}: {:.6f}'.format(i, kappa(y[i_val], p_val[i_val])))
 
-        p_tst += clf.predict(X_tst) / N_FOLD
+        p_tst += clf.predict(X_tst_) / N_FOLD
 
     logging.info('CV: {:.6f}'.format(kappa(y, p_val)))
     logging.info('Saving validation predictions...')
