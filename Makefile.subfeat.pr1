@@ -14,6 +14,8 @@ BASE_FEATURE_TST := $(DIR_FEATURE)/$(BASE_FEATURE_NAME).tst.h5
 
 FEATURE_TRN := $(DIR_FEATURE)/$(FEATURE_NAME).trn.h5
 FEATURE_TST := $(DIR_FEATURE)/$(FEATURE_NAME).tst.h5
+FEATURE_TRN_CSV := $(DIR_FEATURE)/$(FEATURE_NAME).trn.csv
+FEATURE_TST_CSV := $(DIR_FEATURE)/$(FEATURE_NAME).tst.csv
 
 SUBFEAT_TRN := $(SUBFEAT_TRN)
 SUBFEAT_TST := $(SUBFEAT_TST)
@@ -49,6 +51,14 @@ $(FEATURE_TRN) $(FEATURE_TST): $(BASE_FEATURE_TRN) $(BASE_FEATURE_TST) $(Y_TRN_B
                               --subrow-freq $(SUBROW_FREQ) \
                               --early-stop $(N_STOP) \
                               --cv-id $(lastword $^) > $(FEATURE_TST).log 
+
+$(FEATURE_TRN_CSV): $(FEATURE_TRN) | $(DIR_FEATURE)
+	python ./src/h5_to_csv.py --input-h5-file $< \
+                              --output-csv-file $@
+
+$(FEATURE_TST_CSV): $(FEATURE_TST) | $(DIR_FEATURE)
+	python ./src/h5_to_csv.py --input-h5-file $< \
+                              --output-csv-file $@
 
 $(Y_TRN_BINARY): $(Y_TRN) | $(DIR_FEATURE)
 	python ./src/convert_y.py --raw-target $< \
