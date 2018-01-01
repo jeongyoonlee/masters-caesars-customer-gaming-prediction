@@ -1,4 +1,4 @@
-include Makefile.feature.esb0
+include Makefile.feature.esb.esb3
 
 ALGO_NAME := avg
 MODEL_NAME := $(ALGO_NAME)_$(FEATURE_NAME)
@@ -26,14 +26,16 @@ $(PREDICT_TST) $(PREDICT_VAL): $(FEATURE_TRN) $(FEATURE_TST) \
 $(SUBMISSION_TST_GZ): $(SUBMISSION_TST)
 	gzip $<
 
-$(SUBMISSION_TST): $(PREDICT_TST) $(HEADER) $(ID_TST) | $(DIR_SUB)
-	paste -d, $(lastword $^) $< > $@.tmp
-	cat $(word 2, $^) $@.tmp > $@
-	rm $@.tmp
+$(SUBMISSION_TST): $(PREDICT_VAL) $(PREDICT_TST) $(Y_TRN) $(SAMPLE_SUBMISSION) | $(DIR_SUB)
+	python src/write_submission.py --predict-valid-file $< \
+								   --predict-test-file $(word 2, $^) \
+								   --target-file $(word 3, $^) \
+								   --sample-file $(lastword $^) \
+								   --submission-file $@
 
 $(METRIC_VAL): $(PREDICT_VAL) $(Y_TRN) | $(DIR_METRIC)
 	python ./src/evaluate.py --predict-file $< \
-                             --target-file $(word 2, $^) > $@
+                             --target-file $(lastword $^) > $@
 	cat $@
 
 

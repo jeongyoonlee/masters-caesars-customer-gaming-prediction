@@ -1,6 +1,6 @@
-include Makefile.feature.n3
+include Makefile.feature.esb8
 
-GPU = 3
+GPU = 2
 N = 100
 BATCH_SIZE = 1024
 N_STOP = 10
@@ -18,11 +18,10 @@ PREDICT_TST := $(DIR_TST)/$(MODEL_NAME).tst.yht
 
 SUBMISSION_TST := $(DIR_SUB)/$(MODEL_NAME).sub.csv
 SUBMISSION_TST_GZ := $(DIR_SUB)/$(MODEL_NAME).sub.csv.gz
-SUBMISSION_ADJ_TST_GZ := $(DIR_SUB)/$(MODEL_NAME).adj.sub.csv.gz
 
 all: validation submission
 validation: $(METRIC_VAL)
-submission: $(SUBMISSION_ADJ_TST_GZ)
+submission: $(SUBMISSION_TST_GZ)
 retrain: clean_$(ALGO_NAME) submission
 
 $(PREDICT_TST) $(PREDICT_VAL): $(FEATURE_TRN) $(FEATURE_TST) \
@@ -39,18 +38,18 @@ $(PREDICT_TST) $(PREDICT_VAL): $(FEATURE_TRN) $(FEATURE_TST) \
                               --early-stop $(N_STOP) \
 							  --log-file $(LOG_TRN)
 
-$(SUBMISSION_ADJ_TST_GZ): $(SUBMISSION_TST_GZ)
-	python src/adjust_submission.py --submission-file $< --adjusted-file $@
-
 $(SUBMISSION_TST_GZ): $(SUBMISSION_TST)
 	gzip $<
 
-$(SUBMISSION_TST): $(PREDICT_TST) $(HEADER) $(ID_TST) | $(DIR_SUB)
-	paste -d, $(lastword $^) $< > $@.tmp
-	cat $(word 2, $^) $@.tmp > $@
-	rm $@.tmp
 
-$(METRIC_VAL): $(PREDICT_VAL) $(Y_TRNVAL) | $(DIR_METRIC)
+$(SUBMISSION_TST): $(PREDICT_VAL) $(PREDICT_TST) $(Y_TRN) $(SAMPLE_SUBMISSION) | $(DIR_SUB)
+	python src/write_submission.py --predict-valid-file $< \
+								   --predict-test-file $(word 2, $^) \
+								   --target-file $(word 3, $^) \
+								   --sample-file $(lastword $^) \
+								   --submission-file $@
+
+$(METRIC_VAL): $(PREDICT_VAL) $(Y_TRN) | $(DIR_METRIC)
 	python ./src/evaluate.py --predict-file $< \
                              --target-file $(lastword $^) > $@
 	cat $@

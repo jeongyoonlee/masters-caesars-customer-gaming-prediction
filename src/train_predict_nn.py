@@ -91,10 +91,10 @@ def train_predict(train_file, test_file, model_file, predict_valid_file, predict
                               validation_steps=int(np.ceil(len(i_val) / batch_size)))
 
         p[i_val] = clf.predict(X[i_val]).flatten()
-        logging.info('CV {} Log Loss={:.6f}, best iteration={}'.format(i, kappa(y[i_val], p[i_val]), n_best))
-        p_tst += clf.predict(X_tst) / N_FOLD
+        logging.info('CV {} kappa={:.6f}, best iteration={}'.format(i, kappa(y[i_val], p[i_val]), n_best))
+        p_tst += clf.predict(X_tst).flatten() / N_FOLD
 
-    logging.info('CV Log Loss: {:.6f}'.format(kappa(y, p)))
+    logging.info('CV kappa: {:.6f}'.format(kappa(y, p)))
     logging.info('Saving validation predictions...')
     np.savetxt(predict_valid_file, p, fmt='%.6f', delimiter=',')
 

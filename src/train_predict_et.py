@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import ExtraTreesRegressor
 from sklearn.model_selection import KFold
 import argparse
 import logging
@@ -15,8 +15,8 @@ from evaluate import kappa
 from kaggler.data_io import load_data
 
 
-def train_predict(train_file, test_file, feature_map_file, predict_valid_file, predict_test_file,
-                  feature_importance_file, retrain=True):
+def train_predict(train_file, test_file, predict_valid_file, predict_test_file,
+                  n_est, depth, retrain=True):
 
     logging.info('Loading training and test data...')
     X, y = load_data(train_file)
@@ -31,17 +31,10 @@ def train_predict(train_file, test_file, feature_map_file, predict_valid_file, p
     for i, (i_trn, i_val) in enumerate(cv.split(y), 1):
         logging.info('Training model #{}'.format(i))
 
-        clf = LinearRegression()
+        clf = ExtraTreesRegressor(n_estimators=n_est, max_depth=depth, random_state=SEED)
         clf.fit(X[i_trn], y[i_trn])
         p_val[i_val] = clf.predict(X[i_val])
         logging.info('CV #{}: {:.6f}'.format(i, kappa(y[i_val], p_val[i_val])))
-
-        if i == 1:
-            df = pd.read_csv(feature_map_file, sep='\t', names=['id', 'name', 'type'])
-            df['coef'] = clf.coef_
-            df.sort_values('coef', ascending=False, inplace=True)
-            df.to_csv(feature_importance_file, index=False)
-            logging.info('feature importance is saved in {}'.format(feature_importance_file))
 
         if not retrain:
             p_tst += clf.predict(X_tst) / N_FOLD
@@ -52,7 +45,7 @@ def train_predict(train_file, test_file, feature_map_file, predict_valid_file, p
 
     if retrain:
         logging.info('Retraining with 100% training data')
-        clf = LinearRegression()
+        clf = ExtraTreesRegressor(n_estimators=n_est, max_depth=depth, random_state=SEED)
         clf.fit(X, y)
         p_tst = clf.predict(X_tst)
 
@@ -64,10 +57,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--train-file', required=True, dest='train_file')
     parser.add_argument('--test-file', required=True, dest='test_file')
-    parser.add_argument('--feature-map-file', required=True, dest='feature_map_file')
     parser.add_argument('--predict-valid-file', required=True, dest='predict_valid_file')
     parser.add_argument('--predict-test-file', required=True, dest='predict_test_file')
-    parser.add_argument('--feature-importance-file', required=True, dest='feature_importance_file')
+    parser.add_argument('--n-est', default=100, type=int)
+    parser.add_argument('--depth', default=10, type=int)
     parser.add_argument('--retrain', default=False, action='store_true')
     parser.add_argument('--log-file', required=True, dest='log_file')
 
@@ -80,10 +73,10 @@ if __name__ == '__main__':
     start = time.time()
     train_predict(train_file=args.train_file,
                   test_file=args.test_file,
-                  feature_map_file=args.feature_map_file,
                   predict_valid_file=args.predict_valid_file,
                   predict_test_file=args.predict_test_file,
-                  feature_importance_file=args.feature_importance_file,
+                  n_est=args.n_est,
+                  depth=args.depth,
                   retrain=args.retrain)
     logging.info('finished ({:.2f} min elasped)'.format((time.time() - start) /
                                                         60))

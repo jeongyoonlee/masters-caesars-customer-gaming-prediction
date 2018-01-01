@@ -1,4 +1,4 @@
-include Makefile.feature.esb6
+include Makefile.feature.esb8
 
 ALGO_NAME := lr
 MODEL_NAME := $(ALGO_NAME)_$(FEATURE_NAME)
