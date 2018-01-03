@@ -1,0 +1,28 @@
+include Makefile
+
+FEATURE_NAME := esb8_pr
+
+
+PREDICTS_TRN := $(DIR_FEATURE)/esb8.trn.csv
+PREDICTS_TST := $(DIR_FEATURE)/esb8.tst.csv
+
+PR_TRN := $(DIR_FEATURE)/pr_h1_lgbbc1.trn.csv
+PR_TST := $(DIR_FEATURE)/pr_h1_lgbbc1.tst.csv
+
+FEATURE_TRN := $(DIR_FEATURE)/$(FEATURE_NAME).trn.csv
+FEATURE_TST := $(DIR_FEATURE)/$(FEATURE_NAME).tst.csv
+FEATURE_MAP := $(DIR_FEATURE)/$(FEATURE_NAME).fmap
+
+all: $(FEATURE_TRN) $(FEATURE_TST)
+
+$(FEATURE_TRN): $(PREDICTS_TRN) $(PR_TRN) | $(DIR_FEATURE)
+	paste -d, $^ | tr -d '\r' > $@
+
+$(FEATURE_TST): $(PREDICTS_TST) $(PR_TST) | $(DIR_FEATURE)
+	paste -d, $^ | tr -d '\r' > $@
+
+
+clean:: clean_$(FEATURE_NAME)
+
+clean_$(FEATURE_NAME):
+	-rm $(FEATURE_TRN) $(FEATURE_TST)
